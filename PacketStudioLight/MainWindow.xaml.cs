@@ -12,8 +12,6 @@ using System.Xml.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using System.Windows.Controls.Ribbon;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace PacketStudioLight
 {
@@ -298,60 +296,6 @@ namespace PacketStudioLight
         {
             // TODO:
             MessageBox.Show("Not settings yet.");
-        }
-    }
-    public class StretchingTreeViewItem : TreeViewItem
-    {
-        static XElementToColorConverter _colorConverter = new XElementToColorConverter();
-
-        public StretchingTreeViewItem()
-        {
-            this.Loaded += new RoutedEventHandler(StretchingTreeViewItem_Loaded);
-            this.Selected += StretchingTreeViewItem_Selected;
-        }
-
-        private void StretchingTreeViewItem_Selected(object sender, RoutedEventArgs e)
-        {
-            this.Background = Brushes.AliceBlue;
-        }
-
-        private void StretchingTreeViewItem_Loaded(object sender, RoutedEventArgs e)
-        {
-            var dataContext = (sender as System.Windows.FrameworkElement)?.DataContext;
-            this.Background = _colorConverter.Convert(dataContext, typeof(Brush), new object(), System.Globalization.CultureInfo.CurrentCulture) as Brush;
-            this.Resources[SystemColors.HighlightBrush] = Brushes.Green;
-            this.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = Brushes.Green;
-            if (this.VisualChildrenCount > 0)
-            {
-                Grid grid = this.GetVisualChild(0) as Grid;
-                if (grid != null && grid.ColumnDefinitions.Count == 3)
-                {
-                    grid.ColumnDefinitions.RemoveAt(2);
-                    grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-                }
-            }
-        }
-
-        protected override DependencyObject GetContainerForItemOverride()
-        {
-            return new StretchingTreeViewItem();
-        }
-
-        protected override bool IsItemItsOwnContainerOverride(object item)
-        {
-            return item is StretchingTreeViewItem;
-        }
-    }
-    public class StretchingTreeView : TreeView
-    {
-        protected override DependencyObject GetContainerForItemOverride()
-        {
-            return new StretchingTreeViewItem();
-        }
-
-        protected override bool IsItemItsOwnContainerOverride(object item)
-        {
-            return item is StretchingTreeViewItem;
         }
     }
 }

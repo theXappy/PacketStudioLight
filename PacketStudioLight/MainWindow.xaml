@@ -83,7 +83,7 @@
                     <TextBox x:Name="packetTextBox" TextChanged="packetTextBox_TextChanged"
                     TextWrapping="Wrap"
                     AcceptsReturn="True"
-                    FontFamily="Consolas" FontSize="16"
+                    FontFamily="Consolas" FontSize="14"
                      />
                 </DockPanel>
                 <DockPanel Grid.Row="1" Grid.Column="1"
@@ -93,7 +93,7 @@
                     <local:StretchingTreeView x:Name="treeView"
               ItemsSource="{Binding Path=Root.Elements}"
               ItemTemplate="{StaticResource template}"
-                  FontFamily="Consolas" FontSize="16"
+                  FontFamily="Consolas" FontSize="14"
                   />
                 </DockPanel>
             </Grid>

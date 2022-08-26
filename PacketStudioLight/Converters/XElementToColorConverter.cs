@@ -10,6 +10,10 @@ namespace PacketStudioLight
     //MyColorsConverter
     public class XElementToColorConverter : IValueConverter
     {
+        public const string ITEM_STATE_NORMAL = "normal";
+        public const string ITEM_STATE_SELECTED = "selected";
+        public const string ITEM_STATE_SELECTED_INACTIVE = "selected_inactive";
+
         XName showname = XName.Get("showname");
 
 
@@ -29,38 +33,37 @@ namespace PacketStudioLight
 
         static XElementToColorConverter()
         {
-            stateToBrushes["normal"] = new Dictionary<string, Brush>
+            stateToBrushes[ITEM_STATE_NORMAL] = new Dictionary<string, Brush>
             {
                 {"normal", Brushes.Transparent },
                 {"error",  new SolidColorBrush(Color.FromRgb(255, 92, 92)) },
                 {"warn", Brushes.Yellow },
                 {"layer",  new SolidColorBrush(Color.FromRgb(240, 240, 240)) }
             };
-            stateToBrushes["selected"] = new Dictionary<string, Brush>
+            stateToBrushes[ITEM_STATE_SELECTED] = new Dictionary<string, Brush>
             {
                 {"normal", new SolidColorBrush(Color.FromRgb(205, 232, 255)) }, // TODO: Make this transparent-ish blue instead of opaque
                 {"error",  new SolidColorBrush(Color.FromRgb(205, 101, 124)) },
                 {"warn",  new SolidColorBrush(Color.FromRgb(199, 222, 117)) },
                 {"layer",  new SolidColorBrush(Color.FromRgb(193, 220, 243)) },
             };
-            // TODO: Those are just the colors of selected
-            stateToBrushes["selected_inactive"] = new Dictionary<string, Brush>
+            stateToBrushes[ITEM_STATE_SELECTED_INACTIVE] = new Dictionary<string, Brush>
             {
-                {"normal", new SolidColorBrush(Color.FromRgb(205, 232, 255)) },
-                {"error",  new SolidColorBrush(Color.FromRgb(205, 101, 124)) },
-                {"warn",  new SolidColorBrush(Color.FromRgb(199, 222, 117)) },
-                {"layer",  new SolidColorBrush(Color.FromRgb(193, 220, 243)) },
+                {"normal", new SolidColorBrush(Color.FromRgb(217, 217, 217)) },
+                {"error",  new SolidColorBrush(Color.FromRgb(217, 78, 78)) },
+                {"warn",  new SolidColorBrush(Color.FromRgb(210, 206, 71)) },
+                {"layer",  new SolidColorBrush(Color.FromRgb(204, 204, 204)) },
             };
 
         }
 
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            string state = "normal";
+            string state = ITEM_STATE_NORMAL;
 
             XElement element = value as XElement;
             bool isLayer = false;
-            if(element.Parent == null)
+            if(element?.Name?.LocalName == "proto")
             {
                 isLayer = true;
             }
