@@ -1,0 +1,69 @@
+﻿<Window x:Class="PacketStudioLight.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PacketStudioLight"
+        mc:Ignorable="d"
+        Title="Packet Studio Light 1.0" Height="900" Width="1400">
+    <Window.Resources>
+        <local:XElementToPacketDescriptionConverter x:Key="MyConverterKey"/>
+        <local:XElementToColorConverter x:Key="MyColorsConverterKey"/>
+
+        <HierarchicalDataTemplate x:Key="template" ItemsSource="{Binding Path=Elements}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Converter={StaticResource MyConverterKey}}"
+                           Background="{Binding Converter={StaticResource MyColorsConverterKey}}"
+                           />
+            </StackPanel>
+        </HierarchicalDataTemplate>
+    </Window.Resources>
+    <Grid>
+        <Grid Grid.ColumnSpan="2">
+            <!-- Grid parts -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="15*"/>
+                <RowDefinition Height="15*"/>
+            </Grid.RowDefinitions>
+            <!-- Grid parts -->
+
+            <StackPanel Orientation="Horizontal">
+                <Button Margin="2" Padding="10,0" Click="OpenButtonClicked" Grid.Row="0">Open</Button>
+                <Button Margin="2" Padding="10,0" Click="Button_Click" Grid.Column="1">To Wireshark!</Button>
+                <Button Margin="2" Padding="10,0" Click="SpecifyLayersButtonClicked" Grid.Column="2">Specify Layers in Hex</Button>
+            </StackPanel>
+            <DockPanel Grid.Row="1" Grid.ColumnSpan="2"
+                       Margin="3,0,3,3"
+                       >
+                <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packets List</Label>
+                <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
+                  FontFamily="Consolas" FontSize="16"/>
+            </DockPanel>
+            <DockPanel Grid.Row="2"
+                       Margin="3,0,3,3"
+                       >
+                <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
+                <TextBox x:Name="packetTextBox" TextChanged="packetTextBox_TextChanged"
+                    TextWrapping="Wrap"
+                    AcceptsReturn="True"
+                    FontFamily="Consolas" FontSize="16"
+                     />
+            </DockPanel>
+            <DockPanel Grid.Row="2" Grid.Column="1"
+                       Margin="3,0,3,3"
+                       >
+                <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
+                <TreeView Name="treeView"
+              ItemsSource="{Binding Path=Root.Elements}"
+              ItemTemplate="{StaticResource template}"
+                  FontFamily="Consolas" FontSize="16"
+                  />
+            </DockPanel>
+        </Grid>
+    </Grid>
+</Window>
