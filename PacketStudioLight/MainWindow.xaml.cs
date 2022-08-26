@@ -11,6 +11,9 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using System.Windows.Controls.Ribbon;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace PacketStudioLight
 {
@@ -19,9 +22,12 @@ namespace PacketStudioLight
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : RibbonWindow
     {
-        TSharkInterop op = new TSharkInterop(@"C:\Development\wsbuild64\run\RelWithDebInfo\tshark.exe");
+        string _wsDir = @"C:\Development\wsbuild64\run\RelWithDebInfo\";
+        string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
+        string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
+        TSharkInterop op => new TSharkInterop(TsharkPath);
 
 
         public MainWindow()
@@ -138,6 +144,7 @@ namespace PacketStudioLight
                     {
                         XDocument doc = new XDocument(pdml);
                         this.treeView.DataContext = doc;
+                        this.treeView.ItemsSource = doc.Root.Elements();
                     });
                 });
             }
@@ -152,7 +159,7 @@ namespace PacketStudioLight
                 .ToArray();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ExportToWiresharkButtonClicked (object sender, RoutedEventArgs e)
         {
             string tempPath = Path.ChangeExtension(Path.GetTempFileName(), "pcapng");
             using FileStream fs = File.OpenWrite(tempPath);
@@ -248,6 +255,103 @@ namespace PacketStudioLight
             }
             catch
             { }
+        }
+
+        private void NormalizeHexClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string summary = packetsList.SelectedItem as string;
+                string originalText = packetTextBox.Text.ToUpper();
+                string[] lines = packetTextBox.Text.Split('\n');
+                // Removing comment lines and whitespaces
+                string[] cleanedLines = lines
+                    .Where(line => !line.TrimStart().StartsWith("//"))
+                    .Select(line => line.Replace(" ", string.Empty)
+                                        .Replace("\r", string.Empty)
+                                        .Replace("\n", string.Empty))
+                    .ToArray();
+                string joined = String.Join(String.Empty, cleanedLines);
+
+
+                // Make sure the hex makes sense
+                byte[] data = GetBytesFromHex(joined);
+
+                packetTextBox.Text = joined;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can't normalize hex.\r\nException:\r\n" + ex, "Error");
+
+            }
+        }
+
+        private void SelectWiresharkVersionButtonClicked(object sender, RoutedEventArgs e)
+        {
+            // TODO
+            MessageBox.Show("Not supported yet. Current version: " + WiresharkPath);
+        }
+
+        private void ExitButtonClicked(object sender, RoutedEventArgs e) => Environment.Exit(0);
+
+        private void SettingsButtonClicked(object sender, RoutedEventArgs e)
+        {
+            // TODO:
+            MessageBox.Show("Not settings yet.");
+        }
+    }
+    public class StretchingTreeViewItem : TreeViewItem
+    {
+        static XElementToColorConverter _colorConverter = new XElementToColorConverter();
+
+        public StretchingTreeViewItem()
+        {
+            this.Loaded += new RoutedEventHandler(StretchingTreeViewItem_Loaded);
+            this.Selected += StretchingTreeViewItem_Selected;
+        }
+
+        private void StretchingTreeViewItem_Selected(object sender, RoutedEventArgs e)
+        {
+            this.Background = Brushes.AliceBlue;
+        }
+
+        private void StretchingTreeViewItem_Loaded(object sender, RoutedEventArgs e)
+        {
+            var dataContext = (sender as System.Windows.FrameworkElement)?.DataContext;
+            this.Background = _colorConverter.Convert(dataContext, typeof(Brush), new object(), System.Globalization.CultureInfo.CurrentCulture) as Brush;
+            this.Resources[SystemColors.HighlightBrush] = Brushes.Green;
+            this.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = Brushes.Green;
+            if (this.VisualChildrenCount > 0)
+            {
+                Grid grid = this.GetVisualChild(0) as Grid;
+                if (grid != null && grid.ColumnDefinitions.Count == 3)
+                {
+                    grid.ColumnDefinitions.RemoveAt(2);
+                    grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                }
+            }
+        }
+
+        protected override DependencyObject GetContainerForItemOverride()
+        {
+            return new StretchingTreeViewItem();
+        }
+
+        protected override bool IsItemItsOwnContainerOverride(object item)
+        {
+            return item is StretchingTreeViewItem;
+        }
+    }
+    public class StretchingTreeView : TreeView
+    {
+        protected override DependencyObject GetContainerForItemOverride()
+        {
+            return new StretchingTreeViewItem();
+        }
+
+        protected override bool IsItemItsOwnContainerOverride(object item)
+        {
+            return item is StretchingTreeViewItem;
         }
     }
 }
