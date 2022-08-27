@@ -12,17 +12,18 @@ using System.Xml.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using System.Windows.Controls.Ribbon;
+using ICSharpCode.AvalonEdit.Highlighting.Xshd;
+using ICSharpCode.AvalonEdit.Highlighting;
+using System.Xml;
 
 namespace PacketStudioLight
 {
-
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : RibbonWindow
     {
-        string _wsDir = @"C:\Development\wsbuild64\run\RelWithDebInfo\";
+        string _wsDir;
         string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
         TSharkInterop op => new TSharkInterop(TsharkPath);
@@ -31,6 +32,16 @@ namespace PacketStudioLight
         public MainWindow()
         {
             InitializeComponent();
+            var myAssembly = typeof(MainWindow).Assembly;
+            using (Stream s = File.OpenRead("MyHighlighting.xshd"))
+            {
+                using (XmlReader reader = new XmlTextReader(s))
+                {
+                    packetTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                }
+            }
+
+            _wsDir = Properties.Settings.Default.WiresharkDirectory.Trim('"', ' ');
         }
 
         Dictionary<int, InterfaceDescriptionBlock> ifaces;
@@ -46,7 +57,9 @@ namespace PacketStudioLight
 
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Filter = "Captures (*.pcapng)|*.pcapng";
-            ofd.ShowDialog();
+            bool? res = ofd.ShowDialog();
+            if (res != true)
+                return;
             string capPath = ofd.FileName;
 
 
@@ -83,6 +96,15 @@ namespace PacketStudioLight
                 string summary = descs[i].TrimEnd();
                 packets.Add(summary, pkt);
                 packetsList.Items.Add(summary);
+                if (pkt is EnhancedPacketBlock epb)
+                {
+                    string comment = epb.Options.Comment;
+                    if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
+                    {
+                        overrides.Add(summary, new Tuple<byte[], string>(pkt.Data, pslRepresentation));
+                    }
+                }
+
                 i++;
             }
         }
@@ -90,11 +112,8 @@ namespace PacketStudioLight
         private void packetsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             string summary = packetsList.SelectedItem as string;
-
             IPacket pkt = packets[summary];
-
             byte[] data = pkt.Data;
-
             if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
             {
                 packetTextBox.Text = newData.Item2;
@@ -103,15 +122,18 @@ namespace PacketStudioLight
             {
                 packetTextBox.Text = BitConverter.ToString(data).Replace("-", String.Empty);
             }
-
         }
 
+        // This stays here in case we go back to a simple text box
         private void packetTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+            => packetTextBox_TextChanged_Base(sender, e);
+        // This overload is here because that's the signature for the event in case of AvalonEdit
+        private void packetTextBox_TextChanged_Base(object sender, EventArgs e)
         {
             try
             {
                 string summary = packetsList.SelectedItem as string;
-                string originalText = packetTextBox.Text.ToUpper();
+                string originalText = packetTextBox.Text;
                 string[] lines = packetTextBox.Text.Split('\n');
                 // Removing comment lines and whitespaces
                 string[] cleanedLines = lines
@@ -124,7 +146,22 @@ namespace PacketStudioLight
 
                 byte[] data = GetBytesFromHex(joined);
 
-                overrides[summary] = new Tuple<byte[], string>(data, originalText);
+                // User changed the definiton of the packet.
+                // If it's a custom definition (with new lines, comments, spaces to seperate bytes...)
+                // we want to store it as an "override".
+                // If it's just the normal hex stream (either because we JUST opened this packet OR the user
+                // restored the editor's state to unchanged) we DON'T want to restore it and further more - we
+                // want to get rid of any left over overrides.
+                //
+                // This checks if the hex editor actually has different content than the raw hex stream.
+                if (!joined.Equals(originalText, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    overrides[summary] = new Tuple<byte[], string>(data, originalText);
+                }
+                else
+                {
+                    overrides.Remove(summary);
+                }
 
                 // No errors in hex
 
@@ -157,7 +194,7 @@ namespace PacketStudioLight
                 .ToArray();
         }
 
-        private void ExportToWiresharkButtonClicked (object sender, RoutedEventArgs e)
+        private void ExportToWiresharkButtonClicked(object sender, RoutedEventArgs e)
         {
             string tempPath = Path.ChangeExtension(Path.GetTempFileName(), "pcapng");
             using FileStream fs = File.OpenWrite(tempPath);
@@ -167,15 +204,17 @@ namespace PacketStudioLight
             {
                 IPacket originalPacket = packets[summary];
                 byte[] data = originalPacket.Data;
+                string comment = null;
                 if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
                 {
                     data = newData.Item1;
+                    comment = PslcCommentsEncoder.Encode(newData.Item2);
                 }
                 EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
                     new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),
                     data.Length,
                     data,
-                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption());
+                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comment));
 
                 writer.WritePacket(epb);
             }
@@ -185,12 +224,12 @@ namespace PacketStudioLight
             Process.Start(@"C:\Development\wsbuild64\run\RelWithDebInfo\Wireshark.exe", tempPath);
         }
 
-        private void SpecifyLayersButtonClicked(object sender, RoutedEventArgs e)
+        private void AddLayersCommentsButtonClicked(object sender, RoutedEventArgs e)
         {
             try
             {
                 string summary = packetsList.SelectedItem as string;
-                string originalText = packetTextBox.Text.ToUpper();
+                string originalText = packetTextBox.Text;
                 string[] lines = packetTextBox.Text.Split('\n');
                 // Removing comment lines and whitespaces
                 string[] cleanedLines = lines
@@ -201,6 +240,7 @@ namespace PacketStudioLight
                     .ToArray();
                 string joined = String.Join(String.Empty, cleanedLines);
 
+                // Calling this makes sure the hex is valid (otherwise an exception is thrown)
                 byte[] data = GetBytesFromHex(joined);
 
                 IPacket pkt = packets[summary];
@@ -222,7 +262,7 @@ namespace PacketStudioLight
                         {
                             string? hex = ((layer.Values().First() as JValue).Value as string)?.ToUpper();
                             string layerName = name.Replace("_raw", String.Empty);
-                            int index = originalText.IndexOf(hex);
+                            int index = originalText.IndexOf(hex, StringComparison.CurrentCultureIgnoreCase);
                             if (index != -1)
                             {
                                 int layerIndex = index;
@@ -290,12 +330,26 @@ namespace PacketStudioLight
             MessageBox.Show("Not supported yet. Current version: " + WiresharkPath);
         }
 
-        private void ExitButtonClicked(object sender, RoutedEventArgs e) => Environment.Exit(0);
+        private void ExitButtonClicked(object sender, RoutedEventArgs e)
+        {
+            // Running in task so the GUI doesn't freeze
+            Task.Run(() => Environment.Exit(0));
+        }
 
         private void SettingsButtonClicked(object sender, RoutedEventArgs e)
         {
             // TODO:
-            MessageBox.Show("Not settings yet.");
+            SettingsWindow settings = new SettingsWindow();
+            settings.Owner = this;
+            settings.SetCurrentWiresharkDir(_wsDir);
+            bool? results = settings.ShowDialog();
+            if (results == true)
+            {
+                _wsDir = settings.SelectedWiresharkPath;
+                Properties.Settings.Default.WiresharkDirectory = _wsDir;
+                Properties.Settings.Default.Save();
+            }
         }
+
     }
 }

@@ -48,12 +48,11 @@
                     </RibbonMenuButton>
                     <RibbonButton SmallImageSource="Images\save.png" Label="Save" KeyTip="X" />
                     <RibbonButton SmallImageSource="Images\add.png" Label="Add" KeyTip="C" />-->
-                    <RibbonButton SmallImageSource="Images\comment.png" Label="Add Layers Comments" Click="SpecifyLayersButtonClicked" />
+                    <RibbonButton SmallImageSource="Images\comment.png" Label="Add Layers Comments" Click="AddLayersCommentsButtonClicked" />
                     <RibbonButton SmallImageSource="Images\hammer.png" Label="Normalize Hex" Click="NormalizeHexClicked"/>
                 </RibbonGroup>
                 <RibbonGroup x:Name="wiresharkGroup" Header="Wireshark">
                     <RibbonButton LargeImageSource="Images\shark.png" Label="Launch Wireshark" Click="ExportToWiresharkButtonClicked" />
-                    <RibbonButton SmallImageSource="Images\shark_dir.png" Label="Select Version" Click="SelectWiresharkVersionButtonClicked" />
                 </RibbonGroup>
             </RibbonTab>
         </Ribbon>
@@ -81,10 +80,13 @@
                 <!-- Hex Editor Dock -->
                 <DockPanel Grid.Row="2">
                     <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
-                    <TextBox x:Name="packetTextBox" TextChanged="packetTextBox_TextChanged"
-                                TextWrapping="Wrap"
-                                AcceptsReturn="True"
-                                FontFamily="Consolas" FontSize="14"/>
+                    <avalonEdit:TextEditor
+    xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+    x:Name="packetTextBox"
+    FontFamily="Consolas"
+    SyntaxHighlighting="C#"
+    FontSize="10pt"
+                        TextChanged="packetTextBox_TextChanged_Base"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
                 <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
