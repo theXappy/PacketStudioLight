@@ -61,6 +61,11 @@ namespace PacketStudioLight
             if (res != true)
                 return;
             string capPath = ofd.FileName;
+            if (Path.GetExtension(capPath) != ".pcapng")
+            {
+                MessageBox.Show("Error: File did not have a .pcapng extension", "Error");
+                return;
+            }
 
 
             string[]? descs = await op.GetPacketsDescriptions(capPath);
