@@ -93,15 +93,22 @@ namespace PacketStudioLight
                 if (!reader.MoreAvailable)
                     break;
                 IPacket pkt = reader.ReadNextPacket();
+                if (pkt == null)
+                    return;
                 string summary = descs[i].TrimEnd();
                 packets.Add(summary, pkt);
                 packetsList.Items.Add(summary);
                 if (pkt is EnhancedPacketBlock epb)
                 {
-                    string comment = epb.Options.Comment;
-                    if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
+                    // Pack Studio Light might've saved some data in one of the comments.
+                    // We are iterating them until we find one in the right format
+                    foreach (string comment in epb.Options.Comments)
                     {
-                        overrides.Add(summary, new Tuple<byte[], string>(pkt.Data, pslRepresentation));
+                        if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
+                        {
+                            overrides.Add(summary, new Tuple<byte[], string>(pkt.Data, pslRepresentation));
+                            break;
+                        }
                     }
                 }
 
@@ -112,6 +119,9 @@ namespace PacketStudioLight
         private void packetsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             string summary = packetsList.SelectedItem as string;
+            if (summary == null)
+                return;
+
             IPacket pkt = packets[summary];
             byte[] data = pkt.Data;
             if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
@@ -204,17 +214,27 @@ namespace PacketStudioLight
             {
                 IPacket originalPacket = packets[summary];
                 byte[] data = originalPacket.Data;
-                string comment = null;
+
+                List<string> comments = new List<string>();
+                if (originalPacket is EnhancedPacketBlock originalEpb) {
+                    // Readding packet comments EXCEPT any old Packet Studio Light comments
+                    // (We are going to add our one, if required, anyway.
+                    foreach(string comment in originalEpb.Options.Comments)
+                    {
+                        if(!PslcCommentsEncoder.TryDecode(comment, out _))
+                            comments.Add(comment);
+                    }
+                }
                 if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
                 {
                     data = newData.Item1;
-                    comment = PslcCommentsEncoder.Encode(newData.Item2);
+                    comments.Add(PslcCommentsEncoder.Encode(newData.Item2));
                 }
                 EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
                     new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),
                     data.Length,
                     data,
-                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comment));
+                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comments));
 
                 writer.WritePacket(epb);
             }

@@ -49,7 +49,7 @@ namespace PacketStudioLight
             foreach (LinkLayerType linkLayer in allLinkLayers)
             {
                 InterfaceDescriptionBlock ifdb = new InterfaceDescriptionBlock((LinkTypes)linkLayer, ushort.MaxValue,
-                    new InterfaceDescriptionOption(Comment: null, Name: "Fake interface " + nextInterfaceId));
+                    new InterfaceDescriptionOption(Comments: null, Name: "Fake interface " + nextInterfaceId));
                 ifaceDescBlock.Add(ifdb);
                 linkLayerToFakeInterfaceId.Add((ushort)linkLayer, nextInterfaceId);
 
