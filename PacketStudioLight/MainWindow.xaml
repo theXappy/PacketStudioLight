@@ -62,39 +62,39 @@
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="2*"/>
+                    <RowDefinition Height="auto"/>
                     <RowDefinition Height="3*"/>
                 </Grid.RowDefinitions>
                 <!-- Grid parts -->
-                <DockPanel Grid.Row="0" Grid.ColumnSpan="2"
-                       Margin="3,0,3,3"
-                       >
+                <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
                     <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packets List</Label>
                     <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
                   FontFamily="Consolas" FontSize="14"/>
                 </DockPanel>
-                <DockPanel Grid.Row="1"
-                       Margin="3,0,3,3"
-                       >
+                <!-- Horizontal Splitter -->
+                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                <!-- Hex Editor Dock -->
+                <DockPanel Grid.Row="2">
                     <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
                     <TextBox x:Name="packetTextBox" TextChanged="packetTextBox_TextChanged"
-                    TextWrapping="Wrap"
-                    AcceptsReturn="True"
-                    FontFamily="Consolas" FontSize="14"
-                     />
+                                TextWrapping="Wrap"
+                                AcceptsReturn="True"
+                                FontFamily="Consolas" FontSize="14"/>
                 </DockPanel>
-                <DockPanel Grid.Row="1" Grid.Column="1"
-                       Margin="3,0,3,3"
-                       >
+                <!-- Vertical Splitter -->
+                <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+                <!-- Proto Tree Dock -->
+                <DockPanel Grid.Row="2" Grid.Column="2">
                     <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
                     <local:StretchingTreeView x:Name="treeView"
-              ItemsSource="{Binding Path=Root.Elements}"
-              ItemTemplate="{StaticResource template}"
-                  FontFamily="Consolas" FontSize="14"
-                  />
+                              ItemsSource="{Binding Path=Root.Elements}"
+                              ItemTemplate="{StaticResource template}"
+                              FontFamily="Consolas" FontSize="14"/>
                 </DockPanel>
             </Grid>
         </Grid>
