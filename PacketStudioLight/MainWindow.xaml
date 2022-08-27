@@ -85,7 +85,9 @@
     x:Name="packetTextBox"
     FontFamily="Consolas"
     SyntaxHighlighting="C#"
-    FontSize="10pt"
+    ShowLineNumbers="True"
+    WordWrap="True"
+    FontSize="16pt"
                         TextChanged="packetTextBox_TextChanged_Base"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
