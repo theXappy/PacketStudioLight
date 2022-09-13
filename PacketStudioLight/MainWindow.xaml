@@ -21,6 +21,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Ribbon x:Name="RibbonWin"  SelectedIndex="0" ShowQuickAccessToolBarOnTop="False">
             <Ribbon.ApplicationMenu>
@@ -56,7 +57,7 @@
                 </RibbonGroup>
             </RibbonTab>
         </Ribbon>
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1">
             <Grid>
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
@@ -88,7 +89,7 @@
     ShowLineNumbers="True"
     WordWrap="True"
     FontSize="16pt"
-                        TextChanged="packetTextBox_TextChanged_Base"/>
+                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="1,1,1,1"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
                 <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
@@ -102,5 +103,11 @@
                 </DockPanel>
             </Grid>
         </Grid>
+        <DockPanel Grid.Row="2" Background="#FFDFE9F5">
+            <!-- This means nothing at the moment, lol -->
+            <Label DockPanel.Dock="Left">Status: OK</Label>
+            <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
+            <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets: </Label>
+        </DockPanel>
     </Grid>
 </RibbonWindow>

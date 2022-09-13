@@ -99,7 +99,7 @@ namespace PacketStudioLight
                     break;
                 IPacket pkt = reader.ReadNextPacket();
                 if (pkt == null)
-                    return;
+                    break;
                 string summary = descs[i].TrimEnd();
                 packets.Add(summary, pkt);
                 packetsList.Items.Add(summary);
@@ -116,9 +116,9 @@ namespace PacketStudioLight
                         }
                     }
                 }
-
                 i++;
             }
+            packetsCountLabel.Content = i.ToString();
         }
 
         private void packetsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
