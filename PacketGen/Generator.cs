@@ -52,7 +52,7 @@ namespace PacketGen
 
             byte[] UDP_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(UDP_PAYLOAD), out string? payloadHex))
-                UDP_PAYLOAD = GetBytesFromHex(payloadHex);
+                UDP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
 
             ushort UDP_SOURCE_PORT = 1;
             if(variables.TryGetValue(nameof(UDP_SOURCE_PORT), out string? srcPort))
@@ -71,6 +71,7 @@ namespace PacketGen
             return udp;
         }
 
+        public IPv4Packet GenerateIpv4(Dictionary<string, string> variables) => GenerateIp(variables);
         public IPv4Packet GenerateIp(Dictionary<string, string> variables)
         {
             // IP_PAYLOAD = {
@@ -78,10 +79,11 @@ namespace PacketGen
             // // }
             // IP_SOURCE_ADDR = 127.0.0.1
             // IP_DEST_ADDR = 127.0.0.2
+            // IP_NEXT_TYPE = UDP
 
             byte[] IP_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(IP_PAYLOAD), out string? payloadHex))
-                IP_PAYLOAD = GetBytesFromHex(payloadHex);
+                IP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
 
             IPAddress? IP_SOURCE_ADDR = IPAddress.Parse("127.0.0.1");
             if (variables.TryGetValue(nameof(IP_SOURCE_ADDR), out string? srcIp))
@@ -91,8 +93,14 @@ namespace PacketGen
             if (variables.TryGetValue(nameof(IP_DEST_ADDR), out string? dstIp))
                 IPAddress.TryParse(dstIp, out IP_DEST_ADDR);
 
+            ProtocolType IP_NEXT_TYPE = 0;
+            if (variables.TryGetValue(nameof(IP_NEXT_TYPE), out string? ethType))
+                Enum.TryParse(ethType, out IP_NEXT_TYPE);
+
+
             IPv4Packet ip = new IPv4Packet(IP_SOURCE_ADDR, IP_DEST_ADDR);
             ip.PayloadData = IP_PAYLOAD;
+            ip.Protocol = IP_NEXT_TYPE;
 
             EthernetPacket eth = GenerateEthernet(variables);
             eth.PayloadPacket = ip;
@@ -107,11 +115,11 @@ namespace PacketGen
             // // }
             // ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff
             // ETH_DEST_ADDR = aa:bb:cc:dd:ee:00
-            // ETH_TYPE = IPv4
+            // ETH_NEXT_TYPE = IPv4
 
             byte[] ETH_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(ETH_PAYLOAD), out string? payloadHex))
-                ETH_PAYLOAD = GetBytesFromHex(payloadHex);
+                ETH_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
 
             PhysicalAddress? ETH_SOURCE_ADDR = PhysicalAddress.Parse("00:00:00:00:00:00");
             if (variables.TryGetValue(nameof(ETH_SOURCE_ADDR), out string? srcIp))
@@ -121,22 +129,15 @@ namespace PacketGen
             if (variables.TryGetValue(nameof(ETH_DEST_ADDR), out string? dstIp))
                 PhysicalAddress.TryParse(dstIp, out ETH_DEST_ADDR);
 
-            EthernetType ETH_TYPE = EthernetType.None;
-            if (variables.TryGetValue(nameof(ETH_TYPE), out string? ethType))
-                Enum.TryParse(ethType, out ETH_TYPE);
+            EthernetType ETH_NEXT_TYPE = EthernetType.None;
+            if (variables.TryGetValue(nameof(ETH_NEXT_TYPE), out string? ethType))
+                Enum.TryParse(ethType, out ETH_NEXT_TYPE);
 
-            EthernetPacket eth = new EthernetPacket(ETH_SOURCE_ADDR, ETH_DEST_ADDR, ETH_TYPE);
+            EthernetPacket eth = new EthernetPacket(ETH_SOURCE_ADDR, ETH_DEST_ADDR, ETH_NEXT_TYPE);
             eth.PayloadData = ETH_PAYLOAD;
 
             return eth;
         }
 
-        private static byte[] GetBytesFromHex(string hex)
-        {
-            return Enumerable.Range(0, hex.Length)
-                .Where(x => x % 2 == 0)
-                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                .ToArray();
-        }
     }
 }

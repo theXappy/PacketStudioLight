@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 
 namespace PacketGen
 {
@@ -19,15 +20,42 @@ namespace PacketGen
             bool aggregating = false;
             string aggregatingVarName = null;
             StringBuilder sb = new StringBuilder();
-            while(nextLineIndx < lines.Length)
+            while (nextLineIndx < lines.Length)
             {
                 string nextLine = lines[nextLineIndx].Trim();
-                if(!nextLine.StartsWith("//"))
+                if (!nextLine.StartsWith("@"))
                 {
                     if (aggregating)
-                        sb.Append(nextLine);
+                    {
+                        // Aggergating all NON COMMENT lines
+                        if (nextLine.StartsWith("//") || nextLine.StartsWith("/*"))
+                        {
+                        }
+                        else if (nextLine.StartsWith('"'))
+                        {
+                            // Encode a string
+                            Regex stringEncodeExpressionRegex = new Regex("\"(.*)\"\\.Encode\\(\"(.*)\"\\)");
+                            var match = stringEncodeExpressionRegex.Match(nextLine);
+                            if (match.Success)
+                            {
+                                var toEncode = match.Groups[1].ToString();
+                                var encodingName = match.Groups[2].ToString();
+                                var encoding = Encoding.GetEncoding(encodingName);
+                                byte[] encodedString = encoding.GetBytes(toEncode);
+                                sb.Append(encodedString.GetHex());
+                            }
+                            else
+                            {
+                                throw new Exception($"Can't Parse string encode expression '{nextLine}'");
+                            }
+                        }
+                        else
+                        {
+                            sb.Append(nextLine);
+                        }
+                    }
                     else
-                        throw new Exception($"Did not expect line with // at line index {nextLineIndx}");
+                        throw new Exception($"Did not expect line with @ at line index {nextLineIndx}");
                 }
                 else
                 {
@@ -68,5 +96,7 @@ namespace PacketGen
 
             return (type, variables);
         }
+
+
     }
 }
