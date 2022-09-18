@@ -17,13 +17,14 @@ using ICSharpCode.AvalonEdit.Highlighting;
 using System.Xml;
 using PacketGen;
 using PacketDotNet;
+using PacketStudioLight.Extensions;
 
 namespace PacketStudioLight
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : RibbonWindow
+    public partial class MainWindow : Window
     {
         string _wsDir;
         string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
@@ -47,14 +48,21 @@ namespace PacketStudioLight
 
         }
 
+        private class PacketOverride
+        {
+            public byte[] Data { get; set; }
+            public string OriginalText { get; set; }
+            public LinkLayers? LinkLayer { get; set; }
+        }
+
         Dictionary<int, InterfaceDescriptionBlock> ifaces;
         Dictionary<string, IPacket> packets;
-        Dictionary<string, Tuple<byte[], string>> overrides;
+        Dictionary<string, PacketOverride> overrides;
 
         private async void OpenButtonClicked(object sender, RoutedEventArgs e)
         {
             packets = new Dictionary<string, IPacket>();
-            overrides = new Dictionary<string, Tuple<byte[], string>>();
+            overrides = new();
             ifaces = new Dictionary<int, InterfaceDescriptionBlock>();
 
 
@@ -114,7 +122,11 @@ namespace PacketStudioLight
                     {
                         if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
                         {
-                            overrides.Add(summary, new Tuple<byte[], string>(pkt.Data, pslRepresentation));
+                            overrides.Add(summary, new PacketOverride()
+                            {
+                                Data = pkt.Data,
+                                OriginalText = pslRepresentation,
+                            });
                             break;
                         }
                     }
@@ -132,9 +144,9 @@ namespace PacketStudioLight
 
             IPacket pkt = packets[summary];
             byte[] data = pkt.Data;
-            if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
+            if (overrides.TryGetValue(summary, out var pktOverride))
             {
-                packetTextBox.Text = newData.Item2;
+                packetTextBox.Text = pktOverride.OriginalText;
             }
             else
             {
@@ -156,6 +168,7 @@ namespace PacketStudioLight
                 string[] lines = packetTextBox.Text.Split('\n');
 
                 byte[] data = null;
+                PacketOverride pktOverride = null;
                 if (lines.Length > 0 && lines[0].Contains("Generate: "))
                 {
                     (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
@@ -164,7 +177,13 @@ namespace PacketStudioLight
                     Packet p = g.Generate(type, variables);
 
                     data = p.Bytes;
-                    overrides[summary] = new Tuple<byte[], string>(data, originalText);
+                    pktOverride = new PacketOverride()
+                    {
+                        Data = data,
+                        OriginalText = originalText,
+                        LinkLayer = p.GetLayerType()
+                    };
+                    overrides[summary] = pktOverride;
                 }
                 else
                 {
@@ -191,13 +210,17 @@ namespace PacketStudioLight
                     // This checks if the hex editor actually has different content than the raw hex stream.
                     if (!joined.Equals(originalText, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        overrides[summary] = new Tuple<byte[], string>(data, originalText);
+                        pktOverride = new PacketOverride
+                        {
+                            Data = data,
+                            OriginalText = originalText,
+                        };
+                        overrides[summary] = pktOverride;
                     }
                     else
                     {
                         overrides.Remove(summary);
                     }
-
                 }
 
                 // No errors in hex
@@ -209,6 +232,9 @@ namespace PacketStudioLight
                 {
                     llt = (LinkLayerType)ifaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
                 }
+                if (pktOverride?.LinkLayer != null)
+                    llt = (LinkLayerType)pktOverride.LinkLayer.Value;
+
                 var tsharkTask = op.GetPdmlAsync(new TempPacketSaveData(data, llt)).ContinueWith(t =>
                 {
                     XElement pdml = t.Result;
@@ -243,19 +269,20 @@ namespace PacketStudioLight
                 byte[] data = originalPacket.Data;
 
                 List<string> comments = new List<string>();
-                if (originalPacket is EnhancedPacketBlock originalEpb) {
+                if (originalPacket is EnhancedPacketBlock originalEpb)
+                {
                     // Readding packet comments EXCEPT any old Packet Studio Light comments
                     // (We are going to add our one, if required, anyway.
-                    foreach(string comment in originalEpb.Options.Comments)
+                    foreach (string comment in originalEpb.Options.Comments)
                     {
-                        if(!PslcCommentsEncoder.TryDecode(comment, out _))
+                        if (!PslcCommentsEncoder.TryDecode(comment, out _))
                             comments.Add(comment);
                     }
                 }
-                if (overrides.TryGetValue(summary, out Tuple<byte[], string>? newData))
+                if (overrides.TryGetValue(summary, out var pktOverride))
                 {
-                    data = newData.Item1;
-                    comments.Add(PslcCommentsEncoder.Encode(newData.Item2));
+                    data = pktOverride.Data;
+                    comments.Add(PslcCommentsEncoder.Encode(pktOverride.OriginalText));
                 }
                 EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
                     new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),

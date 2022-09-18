@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace PacketStudioLight
+namespace PacketStudioLight.Extensions
 {
-	public static class Extensions
+	public static class RandomStuff
 	{
 		public static IList<string> SplitIntoChunks(this string text, int chunkSize)
 		{
