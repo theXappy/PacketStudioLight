@@ -15,6 +15,8 @@ using System.Windows.Controls.Ribbon;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Xml;
+using PacketGen;
+using PacketDotNet;
 
 namespace PacketStudioLight
 {
@@ -42,6 +44,7 @@ namespace PacketStudioLight
             }
 
             _wsDir = Properties.Settings.Default.WiresharkDirectory.Trim('"', ' ');
+
         }
 
         Dictionary<int, InterfaceDescriptionBlock> ifaces;
@@ -149,33 +152,52 @@ namespace PacketStudioLight
             {
                 string summary = packetsList.SelectedItem as string;
                 string originalText = packetTextBox.Text;
+
                 string[] lines = packetTextBox.Text.Split('\n');
-                // Removing comment lines and whitespaces
-                string[] cleanedLines = lines
-                    .Where(line => !line.TrimStart().StartsWith("//"))
-                    .Select(line => line.Replace(" ", string.Empty)
-                                        .Replace("\r", string.Empty)
-                                        .Replace("\n", string.Empty))
-                    .ToArray();
-                string joined = String.Join(String.Empty, cleanedLines);
 
-                byte[] data = GetBytesFromHex(joined);
-
-                // User changed the definiton of the packet.
-                // If it's a custom definition (with new lines, comments, spaces to seperate bytes...)
-                // we want to store it as an "override".
-                // If it's just the normal hex stream (either because we JUST opened this packet OR the user
-                // restored the editor's state to unchanged) we DON'T want to restore it and further more - we
-                // want to get rid of any left over overrides.
-                //
-                // This checks if the hex editor actually has different content than the raw hex stream.
-                if (!joined.Equals(originalText, StringComparison.CurrentCultureIgnoreCase))
+                byte[] data = null;
+                if (lines.Length > 0 && lines[0].Contains("Generate: "))
                 {
+                    (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
+
+                    Generator g = new Generator();
+                    Packet p = g.Generate(type, variables);
+
+                    data = p.Bytes;
                     overrides[summary] = new Tuple<byte[], string>(data, originalText);
                 }
                 else
                 {
-                    overrides.Remove(summary);
+                    // Normal HEX!
+
+                    // Removing comment lines and whitespaces
+                    string[] cleanedLines = lines
+                        .Where(line => !line.TrimStart().StartsWith("//"))
+                        .Select(line => line.Replace(" ", string.Empty)
+                                            .Replace("\r", string.Empty)
+                                            .Replace("\n", string.Empty))
+                        .ToArray();
+                    string joined = String.Join(String.Empty, cleanedLines);
+
+                    data = GetBytesFromHex(joined);
+
+                    // User changed the definiton of the packet.
+                    // If it's a custom definition (with new lines, comments, spaces to seperate bytes...)
+                    // we want to store it as an "override".
+                    // If it's just the normal hex stream (either because we JUST opened this packet OR the user
+                    // restored the editor's state to unchanged) we DON'T want to restore it and further more - we
+                    // want to get rid of any left over overrides.
+                    //
+                    // This checks if the hex editor actually has different content than the raw hex stream.
+                    if (!joined.Equals(originalText, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        overrides[summary] = new Tuple<byte[], string>(data, originalText);
+                    }
+                    else
+                    {
+                        overrides.Remove(summary);
+                    }
+
                 }
 
                 // No errors in hex

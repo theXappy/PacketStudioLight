@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastPcapng", "FastPcapng\Fa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastPcapng.DataBending", "FastPcapng\FastPcapng.DataBending\FastPcapng.DataBending.csproj", "{0C4368C1-76AA-44C2-AE29-AE8BAB7617E7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PcapngUtils", "PcapngUtils\src\PcapngUtils\PcapngUtils.csproj", "{5CEC967C-1F10-473C-9119-9F7CE24157D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketGen", "PacketGen\PacketGen.csproj", "{C723109C-FB5E-41CC-97E6-C40797F08F2B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{0C4368C1-76AA-44C2-AE29-AE8BAB7617E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C4368C1-76AA-44C2-AE29-AE8BAB7617E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C4368C1-76AA-44C2-AE29-AE8BAB7617E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5CEC967C-1F10-473C-9119-9F7CE24157D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5CEC967C-1F10-473C-9119-9F7CE24157D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5CEC967C-1F10-473C-9119-9F7CE24157D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5CEC967C-1F10-473C-9119-9F7CE24157D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C723109C-FB5E-41CC-97E6-C40797F08F2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C723109C-FB5E-41CC-97E6-C40797F08F2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C723109C-FB5E-41CC-97E6-C40797F08F2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C723109C-FB5E-41CC-97E6-C40797F08F2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -23,7 +23,8 @@
             <RowDefinition/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Ribbon x:Name="RibbonWin"  SelectedIndex="0" ShowQuickAccessToolBarOnTop="False">
+        <Ribbon
+            x:Name="RibbonWin"  SelectedIndex="0" ShowQuickAccessToolBarOnTop="False">
             <Ribbon.ApplicationMenu>
                 <RibbonApplicationMenu KeyTip="F">
                     <RibbonApplicationMenuItem Header="Open" ImageSource="Images\open.png" Click="OpenButtonClicked" />
@@ -57,31 +58,33 @@
                 </RibbonGroup>
             </RibbonTab>
         </Ribbon>
-        <Grid Grid.Row="1">
-            <Grid>
-                <!-- Grid parts -->
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition Height="3*"/>
-                </Grid.RowDefinitions>
-                <!-- Grid parts -->
-                <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
-                    <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packets List</Label>
-                    <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
-                  FontFamily="Consolas" FontSize="14"/>
-                </DockPanel>
-                <!-- Horizontal Splitter -->
-                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-                <!-- Hex Editor Dock -->
-                <DockPanel Grid.Row="2">
-                    <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
-                    <avalonEdit:TextEditor
+            <Grid Grid.Row="1">
+                <Grid>
+                    <!-- Grid parts -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="3*"/>
+                    </Grid.RowDefinitions>
+                    <!-- Grid parts -->
+                    <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
+                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packets List</Label>
+                        <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
+                  FontFamily="Consolas" FontSize="14"
+                             BorderThickness="0,1,0,1"
+                             />
+                    </DockPanel>
+                    <!-- Horizontal Splitter -->
+                    <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                    <!-- Hex Editor Dock -->
+                    <DockPanel Grid.Row="2">
+                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
+                        <avalonEdit:TextEditor
     xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
     x:Name="packetTextBox"
     FontFamily="Consolas"
@@ -89,25 +92,27 @@
     ShowLineNumbers="True"
     WordWrap="True"
     FontSize="16pt"
-                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="1,1,1,1"/>
-                </DockPanel>
-                <!-- Vertical Splitter -->
-                <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
-                <!-- Proto Tree Dock -->
-                <DockPanel Grid.Row="2" Grid.Column="2">
-                    <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
-                    <local:StretchingTreeView x:Name="treeView"
+                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="0,1,1,1"/>
+                    </DockPanel>
+                    <!-- Vertical Splitter -->
+                    <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+                    <!-- Proto Tree Dock -->
+                    <DockPanel Grid.Row="2" Grid.Column="2">
+                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
+                        <local:StretchingTreeView x:Name="treeView"
                               ItemsSource="{Binding Path=Root.Elements}"
                               ItemTemplate="{StaticResource template}"
-                              FontFamily="Consolas" FontSize="14"/>
-                </DockPanel>
+                              FontFamily="Consolas" FontSize="14"
+                                              BorderThickness="1,1,0,1"
+                                              />
+                    </DockPanel>
+                </Grid>
             </Grid>
-        </Grid>
-        <DockPanel Grid.Row="2" Background="#FFDFE9F5">
-            <!-- This means nothing at the moment, lol -->
-            <Label DockPanel.Dock="Left">Status: OK</Label>
-            <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
-            <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets: </Label>
-        </DockPanel>
+            <DockPanel Grid.Row="2" Background="#FFDFE9F5">
+                <!-- This means nothing at the moment, lol -->
+                <Label DockPanel.Dock="Left">Status: OK</Label>
+                <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
+                <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets:</Label>
+            </DockPanel>
     </Grid>
 </RibbonWindow>
