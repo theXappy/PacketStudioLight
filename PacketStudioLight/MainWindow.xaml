@@ -9,7 +9,6 @@
               >
     <Window.Resources>
         <local:XElementToPacketDescriptionConverter x:Key="MyConverterKey"/>
-        <local:XElementToColorConverter x:Key="MyColorsConverterKey"/>
 
         <HierarchicalDataTemplate x:Key="template" ItemsSource="{Binding Path=Elements}">
             <StackPanel Orientation="Horizontal" Width="{Binding Width, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeView}}}" >

@@ -1,4 +1,4 @@
-﻿using Haukcode.PcapngUtils.Common;
+using Haukcode.PcapngUtils.Common;
 using Haukcode.PcapngUtils.PcapNG.BlockTypes;
 using Haukcode.PcapngUtils.PcapNG;
 using Microsoft.Win32;
@@ -169,12 +169,14 @@ namespace PacketStudioLight
 
                 byte[] data = null;
                 PacketOverride pktOverride = null;
-                if (lines.Length > 0 && lines[0].Contains("Generate: "))
+                if (lines.Length > 0 &&
+                    lines[0].StartsWith("@") && 
+                    lines[0].Contains("Generate: "))
                 {
                     (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
 
-                    Generator g = new Generator();
-                    Packet p = g.Generate(type, variables);
+                    
+                    Packet p = PacketsGenerator.Generate(type, variables);
 
                     data = p.Bytes;
                     pktOverride = new PacketOverride()
