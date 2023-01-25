@@ -136,5 +136,28 @@ namespace PacketGen
             return eth;
         }
 
+        public static EthernetPacket GenerateRaw(Dictionary<string, string> variables)
+        {
+            // RAW_PAYLOAD = {
+            // aa bb cc dd
+            // // }
+            // ENCAPSULATION_TYPE = Ethernet
+
+            byte[] RAW_PAYLOAD = new byte[0];
+            if (variables.TryGetValue(nameof(RAW_PAYLOAD), out string payloadHex))
+                RAW_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
+            
+            string ENCAPSULATION_TYPE;
+            if (variables.TryGetValue(nameof(ENCAPSULATION_TYPE), out ENCAPSULATION_TYPE))
+            {
+                if (ENCAPSULATION_TYPE.ToUpper() != "ETHERNET")
+                    throw new Exception("Other raw types not supported. Just Ethernet for now.");
+            }
+                
+            EthernetPacket eth = Packet.ParsePacket(LinkLayers.Ethernet, RAW_PAYLOAD) as EthernetPacket;
+
+            return eth;
+        }
+
     }
 }
