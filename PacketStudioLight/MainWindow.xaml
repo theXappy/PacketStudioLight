@@ -1,4 +1,4 @@
-﻿<Window x:Class="PacketStudioLight.MainWindow"
+<Window x:Class="PacketStudioLight.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -60,38 +60,63 @@
                     <RibbonButton SmallImageSource="Images\comment.png" Label="Add Layers Comments" Click="AddLayersCommentsButtonClicked" />
                     <RibbonButton SmallImageSource="Images\hammer.png" Label="Normalize Hex" Click="NormalizeHexClicked"/>
                 </RibbonGroup>
-                <RibbonGroup x:Name="wiresharkGroup" Header="Wireshark">
+                <RibbonGroup x:Name="wiresharkGroup" Header="Export">
                     <RibbonButton LargeImageSource="Images\shark.png" Label="Launch Wireshark" Click="ExportToWiresharkButtonClicked" />
                 </RibbonGroup>
             </RibbonTab>
         </Ribbon>
-            <Grid Grid.Row="1">
-                <Grid>
-                    <!-- Grid parts -->
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="2*"/>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="3*"/>
-                    </Grid.RowDefinitions>
-                    <!-- Grid parts -->
-                    <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
-                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packets List</Label>
-                        <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
+        <Grid Grid.Row="1">
+            <Grid>
+                <!-- Grid parts -->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="3*"/>
+                </Grid.RowDefinitions>
+                <!-- Grid parts -->
+                <DockPanel Grid.Row="0" Grid.ColumnSpan="3" Background="#FFF0F0F0">
+                    <Label DockPanel.Dock="Top" >Packets List</Label>
+                    <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
                   FontFamily="Consolas" FontSize="14"
-                             BorderThickness="0,1,0,1"
+                             BorderThickness="1,1,1,1"
+                  Margin="5,0"
                              />
+                </DockPanel>
+                <!-- Horizontal Splitter -->
+                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                <!-- Hex Editor Dock -->
+                <DockPanel Grid.Row="2" Background="#FFF0F0F0">
+                    <DockPanel DockPanel.Dock="Top" LastChildFill="False">
+                        <Label DockPanel.Dock="Left">Packet Editor</Label>
+                        <Label Foreground="CornflowerBlue">
+                            <Label.Content>🛈</Label.Content>
+                            <Label.ToolTip>
+                                <ToolTip Placement="Right">
+                                    <TextBlock FontFamily="Consolas">
+                                    @ Generate: Ethernet <LineBreak/>
+                                    @ ETH_PAYLOAD = { <LineBreak/>
+                                    450000309F354000 <LineBreak/>
+                                    800600000A64660C <LineBreak/>
+                                    AC1CC30170801167 <LineBreak/>
+                                    5367603E00000000 <LineBreak/>
+                                    "Some Text".Encode("ASCII") <LineBreak/>
+                                    7002FAF0DFB00000 <LineBreak/>
+                                    020405B401010402 <LineBreak/>
+                                    @ } <LineBreak/>
+                                    @ ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff <LineBreak/>
+                                    @ ETH_DEST_ADDR = aa:bb:cc:dd:ee:00 <LineBreak/>
+                                    @ ETH_NEXT_TYPE = IPv4
+                                    </TextBlock>
+                                </ToolTip>
+                            </Label.ToolTip>
+                        </Label>
                     </DockPanel>
-                    <!-- Horizontal Splitter -->
-                    <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-                    <!-- Hex Editor Dock -->
-                    <DockPanel Grid.Row="2">
-                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Packet Editor</Label>
-                        <avalonEdit:TextEditor
+                    <avalonEdit:TextEditor
     xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
     x:Name="packetTextBox"
     FontFamily="Consolas"
@@ -99,27 +124,29 @@
     ShowLineNumbers="True"
     WordWrap="True"
     FontSize="16pt"
-                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="0,1,1,1"/>
-                    </DockPanel>
-                    <!-- Vertical Splitter -->
-                    <GridSplitter Grid.Row="2" Grid.Column="1" Width="4" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
-                    <!-- Proto Tree Dock -->
-                    <DockPanel Grid.Row="2" Grid.Column="2">
-                        <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
-                        <local:StretchingTreeView x:Name="treeView"
+    Margin="5,0,0,0"
+                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="1,1,1,1"/>
+                </DockPanel>
+                <!-- Vertical Splitter -->
+                <GridSplitter Grid.Row="2" Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+                <!-- Proto Tree Dock -->
+                <DockPanel Grid.Row="2" Grid.Column="2">
+                    <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
+                    <local:StretchingTreeView x:Name="treeView"
+                              Margin="0,0,5,0"
                               ItemsSource="{Binding Path=Root.Elements}"
                               ItemTemplate="{StaticResource template}"
                               FontFamily="Consolas" FontSize="14"
-                                              BorderThickness="1,1,0,1"
+                                              BorderThickness="1,1,1,1"
                                               />
-                    </DockPanel>
-                </Grid>
+                </DockPanel>
             </Grid>
-            <DockPanel Grid.Row="2" Background="#FFDFE9F5">
-                <!-- This means nothing at the moment, lol -->
-                <Label DockPanel.Dock="Left">Status: OK</Label>
-                <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
-                <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets:</Label>
-            </DockPanel>
+        </Grid>
+        <DockPanel Grid.Row="2" Background="#FFDFE9F5">
+            <!-- This means nothing at the moment, lol -->
+            <Label DockPanel.Dock="Left">Status: OK</Label>
+            <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
+            <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets:</Label>
+        </DockPanel>
     </Grid>
 </Window>

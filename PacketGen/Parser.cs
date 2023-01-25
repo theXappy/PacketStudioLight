@@ -63,7 +63,7 @@ namespace PacketGen
                 }
                 else
                 {
-                    string prefixless = nextLine.Substring(2).Trim();
+                    string prefixless = nextLine.Substring(1).Trim();
                     string[] split = prefixless.Split('=').Select(part => part.Trim()).ToArray();
                     if (split.Length != 2)
                     {
