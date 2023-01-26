@@ -15,12 +15,74 @@ using System.Windows.Controls.Ribbon;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Xml;
+using FastPcapng;
 using PacketGen;
 using PacketDotNet;
 using PacketStudioLight.Extensions;
+using GongSolutions.Wpf.DragDrop;
+using System.Collections.ObjectModel;
 
 namespace PacketStudioLight
 {
+    class PacketsListBoxViewModel : IDropTarget
+    {
+        public ObservableCollection<string> MyPacketsList { get; set; }
+
+        public event EventHandler<PacketMovedEventArgs> Updated;
+
+        public PacketsListBoxViewModel(ObservableCollection<string> myPacketsList)
+        {
+            MyPacketsList = myPacketsList;
+        }
+
+        void IDropTarget.DragOver(IDropInfo dropInfo)
+        {
+            //ExampleItemViewModel sourceItem = dropInfo.Data as ExampleItemViewModel;
+            //ExampleItemViewModel targetItem = dropInfo.TargetItem as ExampleItemViewModel;
+
+            //if (sourceItem != null && targetItem != null && targetItem.CanAcceptChildren)
+            //{
+            dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
+            dropInfo.Effects = DragDropEffects.Move;
+            //}
+        }
+
+        void IDropTarget.Drop(IDropInfo dropInfo)
+        {
+            int toIndex = dropInfo.InsertIndex;
+            int fromIndex = MyPacketsList.IndexOf(dropInfo.Data as string);
+            if (toIndex > fromIndex)
+            {
+                // When removing the packet from the current index, it moves the dest index back by 1
+                toIndex = toIndex - 1;
+            }
+            if (fromIndex == toIndex)
+                return;
+            // First let's move the UI elemenmts to show responsiveness to the user
+            string textualItemToMove = MyPacketsList[fromIndex];
+            MyPacketsList.RemoveAt(fromIndex);
+            MyPacketsList.Insert(toIndex, textualItemToMove);
+
+            // Finally ask the window to move pacets in the memory pcapng and  re-generate a packets list
+            // (to, at least, fix indexes & timestamps. Possibly also the "info column" would be affected)
+            Updated?.Invoke(this, new PacketMovedEventArgs(fromIndex, toIndex));
+        }
+    }
+
+    public class PacketMovedEventArgs : EventArgs
+    {
+        public int FromIndex { get; set; }
+        public int ToIndex { get; set; }
+
+        public PacketMovedEventArgs(int fromIndex, int toIndex)
+        {
+            FromIndex = fromIndex;
+            ToIndex = toIndex;
+        }
+    }
+
+
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -31,6 +93,7 @@ namespace PacketStudioLight
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
         TSharkInterop op => new TSharkInterop(TsharkPath);
 
+        private MemoryPcapng _memoryPcapng;
 
         public MainWindow()
         {
@@ -55,17 +118,11 @@ namespace PacketStudioLight
             public LinkLayers? LinkLayer { get; set; }
         }
 
-        Dictionary<int, InterfaceDescriptionBlock> ifaces;
-        Dictionary<string, IPacket> packets;
-        Dictionary<string, PacketOverride> overrides;
+        Dictionary<string, IPacket> _packetsDict;
+        Dictionary<int, PacketOverride> _overrides;
 
         private async void OpenButtonClicked(object sender, RoutedEventArgs e)
         {
-            packets = new Dictionary<string, IPacket>();
-            overrides = new();
-            ifaces = new Dictionary<int, InterfaceDescriptionBlock>();
-
-
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Filter = "Captures (*.pcapng)|*.pcapng";
             bool? res = ofd.ShowDialog();
@@ -78,73 +135,152 @@ namespace PacketStudioLight
                 return;
             }
 
+            // User didn't cancel & actually chose a pcapng file. We can clear the old data now.
+            packetsListBox.SelectedIndex = -1;
+            packetsListBox.DataContext = null;
+            packetsListBox.IsEnabled = false;
+            packetTextBox.Text = "";
+            statusLabel.Content = "Loading...";
+            statusLabel.Visibility = Visibility.Visible;
+            _packetsDict = new Dictionary<string, IPacket>();
+            _overrides = new();
 
-            string[]? descs = await op.GetPacketsDescriptions(capPath);
 
-            FileStream fs;
-            try
-            {
-                fs = File.OpenRead(capPath);
-            }
-            catch
-            {
-                return;
-            }
+            _memoryPcapng = MemoryPcapng.ParsePcapng(capPath);
+            await UpdatePacketsList();
 
-            PcapNGReader? reader = new PcapNGReader(fs, false);
-            int j = 0;
-            foreach (var x in reader.HeadersWithInterfaceDescriptions)
+            packetsListBox.IsEnabled = true;
+            statusLabel.Visibility = Visibility.Collapsed;
+
+            //string[]? descs = await op.GetPacketsDescriptions(capPath);
+
+            //FileStream fs;
+            //try
+            //{
+            //    fs = File.OpenRead(capPath);
+            //}
+            //catch
+            //{
+            //    return;
+            //}
+
+            //PcapNGReader? reader = new PcapNGReader(fs, false);
+            //int j = 0;
+            //foreach (var x in reader.HeadersWithInterfaceDescriptions)
+            //{
+            //    foreach (var iface in x.InterfaceDescriptions)
+            //    {
+            //        ifaces.Add(j, iface);
+            //        j++;
+            //    }
+            //}
+
+            //packetsListBox.Items.Clear();
+            //int i = 0;
+            //while (true)
+            //{
+            //    if (!reader.MoreAvailable)
+            //        break;
+            //    IPacket pkt = reader.ReadNextPacket();
+            //    if (pkt == null)
+            //        break;
+            //    string summary = descs[i].TrimEnd();
+            //    packetsDict.Add(summary, pkt);
+            //    packetsListBox.Items.Add(summary);
+            //    if (pkt is EnhancedPacketBlock epb)
+            //    {
+            //        // Packet Studio Light might've saved some data in one of the comments.
+            //        // We are iterating them until we find one in the right format
+            //        foreach (string comment in epb.Options.Comments)
+            //        {
+            //            if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
+            //            {
+            //                overrides.Add(summary, new PacketOverride()
+            //                {
+            //                    Data = pkt.Data,
+            //                    OriginalText = pslRepresentation,
+            //                });
+            //                break;
+            //            }
+            //        }
+            //    }
+            //    i++;
+            //}
+            //packetsCountLabel.Content = i.ToString();
+        }
+
+        private async Task UpdatePacketsList()
+        {
+            string[] results = await op.GetPacketsDescriptions(_memoryPcapng);
+            var newDataContext = new PacketsListBoxViewModel(new ObservableCollection<string>(results));
+            newDataContext.Updated += HandlePacketsDraggedAndDropped;
+            packetsListBox.DataContext = newDataContext;
+        }
+
+        private void HandlePacketsDraggedAndDropped(object? sender, PacketMovedEventArgs e)
+            => this.Dispatcher.Invoke(() => HandlePacketsDraggedAndDroppedUI(sender, e));
+        private async void HandlePacketsDraggedAndDroppedUI(object? sender, PacketMovedEventArgs e)
+        {
+            statusLabel.Content = "Reordering...";
+            statusLabel.Visibility = Visibility.Visible;
+
+            // Now let's move the Packet Blocks in the memory pcap
+            ApplyOverrides();
+            await Task.Run(() => _memoryPcapng.MovePacket(e.FromIndex, e.ToIndex));
+
+            PacketsListBoxViewModel vm = sender as PacketsListBoxViewModel;
+            vm.Updated -= HandlePacketsDraggedAndDropped;
+
+            await UpdatePacketsList();
+
+            statusLabel.Visibility = Visibility.Hidden;
+        }
+
+        private void ApplyOverrides()
+        {
+            foreach (var (pktIndex, pktOverride) in _overrides)
             {
-                foreach (var iface in x.InterfaceDescriptions)
+                // TODO: Does using "first" here make sense?
+                InterfaceDescriptionBlock? iface = (_memoryPcapng.Interfaces.FirstOrDefault(iface =>
+                    (LinkLayerType)iface.LinkType == (LinkLayerType)pktOverride.LinkLayer));
+                int ifaceIndex = _memoryPcapng.Interfaces.IndexOf(iface);
+
+                // Construct new packet, mostly using the old packet in the same index
+                EnhancedPacketBlock originalPacket = _memoryPcapng.GetPacket(pktIndex);
+                originalPacket.InterfaceID = ifaceIndex; // TODO: We might move packets between interface for no reason if the link types are the same
+                originalPacket.Data = pktOverride.Data;
+                List<string> comments = new List<string>();
+                if (originalPacket is EnhancedPacketBlock originalEpb)
                 {
-                    ifaces.Add(j, iface);
-                    j++;
-                }
-            }
-
-            packetsList.Items.Clear();
-            int i = 0;
-            while (true)
-            {
-                if (!reader.MoreAvailable)
-                    break;
-                IPacket pkt = reader.ReadNextPacket();
-                if (pkt == null)
-                    break;
-                string summary = descs[i].TrimEnd();
-                packets.Add(summary, pkt);
-                packetsList.Items.Add(summary);
-                if (pkt is EnhancedPacketBlock epb)
-                {
-                    // Pack Studio Light might've saved some data in one of the comments.
-                    // We are iterating them until we find one in the right format
-                    foreach (string comment in epb.Options.Comments)
+                    // Readding packet comments EXCEPT any old Packet Studio Light comments
+                    // (We are going to add our one, if required, anyway.
+                    foreach (string comment in originalEpb.Options.Comments)
                     {
-                        if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
-                        {
-                            overrides.Add(summary, new PacketOverride()
-                            {
-                                Data = pkt.Data,
-                                OriginalText = pslRepresentation,
-                            });
-                            break;
-                        }
+                        if (!PslcCommentsEncoder.TryDecode(comment, out _))
+                            comments.Add(comment);
                     }
                 }
-                i++;
+                byte[] data = pktOverride.Data;
+                comments.Add(PslcCommentsEncoder.Encode(pktOverride.OriginalText));
+                EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
+                    new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),
+                    data.Length,
+                    data,
+                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comments));
+
+                // Update packet!
+                _memoryPcapng.UpdatePacket(pktIndex, epb);
             }
-            packetsCountLabel.Content = i.ToString();
+            _overrides.Clear();
         }
 
         private void packetsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            string summary = packetsList.SelectedItem as string;
-            if (summary == null)
+            if (packetsListBox.SelectedIndex == -1)
                 return;
-
-            IPacket pkt = packets[summary];
+            IPacket pkt = _memoryPcapng.GetPacket(packetsListBox.SelectedIndex);
             byte[] data = pkt.Data;
-            if (overrides.TryGetValue(summary, out var pktOverride))
+            if (_overrides.TryGetValue(packetsListBox.SelectedIndex, out var pktOverride))
             {
                 packetTextBox.Text = pktOverride.OriginalText;
             }
@@ -162,7 +298,9 @@ namespace PacketStudioLight
         {
             try
             {
-                string summary = packetsList.SelectedItem as string;
+                int pktIndex = packetsListBox.SelectedIndex;
+                if (pktIndex == -1)
+                    return;
                 string originalText = packetTextBox.Text;
 
                 string[] lines = packetTextBox.Text.Split('\n');
@@ -170,12 +308,12 @@ namespace PacketStudioLight
                 byte[] data = null;
                 PacketOverride pktOverride = null;
                 if (lines.Length > 0 &&
-                    lines[0].StartsWith("@") && 
+                    lines[0].StartsWith("@") &&
                     lines[0].Contains("Generate: "))
                 {
                     (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
 
-                    
+
                     Packet p = PacketsGenerator.Generate(type, variables);
 
                     data = p.Bytes;
@@ -185,7 +323,7 @@ namespace PacketStudioLight
                         OriginalText = originalText,
                         LinkLayer = p.GetLayerType()
                     };
-                    overrides[summary] = pktOverride;
+                    _overrides[pktIndex] = pktOverride;
                 }
                 else
                 {
@@ -217,26 +355,47 @@ namespace PacketStudioLight
                             Data = data,
                             OriginalText = originalText,
                         };
-                        overrides[summary] = pktOverride;
+                        _overrides[pktIndex] = pktOverride;
                     }
                     else
                     {
-                        overrides.Remove(summary);
+                        _overrides.Remove(pktIndex);
                     }
                 }
 
                 // No errors in hex
 
 
-                IPacket pkt = packets[summary];
+                IPacket pkt = _memoryPcapng.GetPacket(pktIndex);
                 LinkLayerType llt = LinkLayerType.Ethernet;
                 if (pkt is EnhancedPacketBlock)
                 {
-                    llt = (LinkLayerType)ifaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
+                    llt = (LinkLayerType)_memoryPcapng.Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
                 }
+
                 if (pktOverride?.LinkLayer != null)
                     llt = (LinkLayerType)pktOverride.LinkLayer.Value;
 
+                // BEWARE: LAZY CODE AHEAD
+                bool packetChanged = false;
+                if (!pkt.Data.SequenceEqual(data))
+                {
+                    packetChanged = true;
+                    pktOverride = new PacketOverride
+                    {
+                        Data = data,
+                        OriginalText = originalText,
+                        LinkLayer = (LinkLayers)llt
+                    };
+                    _overrides[pktIndex] = pktOverride;
+                    ApplyOverrides();
+
+                    pkt = _memoryPcapng.GetPacket(pktIndex);
+                    data = pkt.Data;
+                }
+;
+
+                // Update tree
                 var tsharkTask = op.GetPdmlAsync(new TempPacketSaveData(data, llt)).ContinueWith(t =>
                 {
                     XElement pdml = t.Result;
@@ -247,6 +406,14 @@ namespace PacketStudioLight
                         this.treeView.ItemsSource = doc.Root.Elements();
                     });
                 });
+                if (packetChanged)
+                {
+                    // Update packets list
+                    UpdatePacketsList().ContinueWith((Action<Task>)(t => Dispatcher.Invoke(() =>
+                    {
+                        packetsListBox.SelectedIndex = pktIndex;
+                    })));
+                }
             }
             catch { }
         }
@@ -265,9 +432,9 @@ namespace PacketStudioLight
             using FileStream fs = File.OpenWrite(tempPath);
             PcapNGWriter writer = new PcapNGWriter(fs);
 
-            foreach (string summary in packetsList.Items.Cast<string>())
+            for (int pktIndex = 0; pktIndex < packetsListBox.Items.Count; pktIndex++)
             {
-                IPacket originalPacket = packets[summary];
+                IPacket originalPacket = _memoryPcapng.GetPacket(pktIndex);
                 byte[] data = originalPacket.Data;
 
                 List<string> comments = new List<string>();
@@ -281,7 +448,7 @@ namespace PacketStudioLight
                             comments.Add(comment);
                     }
                 }
-                if (overrides.TryGetValue(summary, out var pktOverride))
+                if (_overrides.TryGetValue(pktIndex, out var pktOverride))
                 {
                     data = pktOverride.Data;
                     comments.Add(PslcCommentsEncoder.Encode(pktOverride.OriginalText));
@@ -304,7 +471,7 @@ namespace PacketStudioLight
         {
             try
             {
-                string summary = packetsList.SelectedItem as string;
+                string summary = packetsListBox.SelectedItem as string;
                 string originalText = packetTextBox.Text;
                 string[] lines = packetTextBox.Text.Split('\n');
                 // Removing comment lines and whitespaces
@@ -319,11 +486,11 @@ namespace PacketStudioLight
                 // Calling this makes sure the hex is valid (otherwise an exception is thrown)
                 byte[] data = GetBytesFromHex(joined);
 
-                IPacket pkt = packets[summary];
+                IPacket pkt = _packetsDict[summary];
                 LinkLayerType llt = LinkLayerType.Ethernet;
                 if (pkt is EnhancedPacketBlock)
                 {
-                    llt = (LinkLayerType)ifaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
+                    llt = (LinkLayerType)_memoryPcapng.Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
                 }
 
 
@@ -375,7 +542,7 @@ namespace PacketStudioLight
         {
             try
             {
-                string summary = packetsList.SelectedItem as string;
+                string summary = packetsListBox.SelectedItem as string;
                 string originalText = packetTextBox.Text.ToUpper();
                 string[] lines = packetTextBox.Text.Split('\n');
                 // Removing comment lines and whitespaces
@@ -427,5 +594,14 @@ namespace PacketStudioLight
             }
         }
 
+        private void PacketsList_OnDrop(object sender, DragEventArgs e)
+        {
+            var formats = e.Data.GetFormats();
+            if (formats.Length == 1 && formats[0] == "GongSolutions.Wpf.DragDrop")
+            {
+
+
+            }
+        }
     }
 }

@@ -6,6 +6,8 @@
         xmlns:local="clr-namespace:PacketStudioLight"
         mc:Ignorable="d"
         Title="Packet Studio Light 1.0" Height="900" Width="1400" Icon="/icons8-lightweight-96.png"
+        xmlns:dd="urn:gong-wpf-dragdrop"
+
               >
     <Window.Resources>
         <local:XElementToPacketDescriptionConverter x:Key="MyConverterKey"/>
@@ -31,7 +33,7 @@
             amature. See here:
             https://stackoverflow.com/questions/12567455/wpf-ribbonwindow-ribbon-title-outside-screen
             -->
-            
+
             <Ribbon.ApplicationMenu>
                 <RibbonApplicationMenu KeyTip="F">
                     <RibbonApplicationMenuItem Header="Open" ImageSource="Images\open.png" Click="OpenButtonClicked" />
@@ -80,12 +82,23 @@
                 </Grid.RowDefinitions>
                 <!-- Grid parts -->
                 <DockPanel Grid.Row="0" Grid.ColumnSpan="3" Background="#FFF0F0F0">
-                    <Label DockPanel.Dock="Top" >Packets List</Label>
-                    <ListBox x:Name="packetsList"  SelectionChanged="packetsList_SelectionChanged"
-                  FontFamily="Consolas" FontSize="14"
-                             BorderThickness="1,1,1,1"
-                  Margin="5,0"
+                    <Label DockPanel.Dock="Top" >Packets List
+                    </Label>
+                    <Grid Margin="5,0">
+                        <ListBox x:Name="packetsListBox" SelectionChanged="packetsList_SelectionChanged"
+                                  ItemsSource="{Binding MyPacketsList}"
+                                  FontFamily="Consolas" FontSize="14"
+                                  BorderThickness="1,1,1,1"
+                                  dd:DragDrop.IsDragSource="True"
+                                  dd:DragDrop.IsDropTarget="True"
+                                  dd:DragDrop.DropHandler="{Binding}"
+                                  Drop="PacketsList_OnDrop"
                              />
+                        <Label x:Name="statusLabel" Margin="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                                        FontSize="45" Background="#44333333" Visibility="Collapsed">
+                            Loading...
+                        </Label>
+                    </Grid>
                 </DockPanel>
                 <!-- Horizontal Splitter -->
                 <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
