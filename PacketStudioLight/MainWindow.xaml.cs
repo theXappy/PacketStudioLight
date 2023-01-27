@@ -91,62 +91,6 @@ namespace PacketStudioLight
 
             packetsListBox.IsEnabled = true;
             statusLabel.Visibility = Visibility.Collapsed;
-
-            //string[]? descs = await op.GetPacketsDescriptions(capPath);
-
-            //FileStream fs;
-            //try
-            //{
-            //    fs = File.OpenRead(capPath);
-            //}
-            //catch
-            //{
-            //    return;
-            //}
-
-            //PcapNGReader? reader = new PcapNGReader(fs, false);
-            //int j = 0;
-            //foreach (var x in reader.HeadersWithInterfaceDescriptions)
-            //{
-            //    foreach (var iface in x.InterfaceDescriptions)
-            //    {
-            //        ifaces.Add(j, iface);
-            //        j++;
-            //    }
-            //}
-
-            //packetsListBox.Items.Clear();
-            //int i = 0;
-            //while (true)
-            //{
-            //    if (!reader.MoreAvailable)
-            //        break;
-            //    IPacket pkt = reader.ReadNextPacket();
-            //    if (pkt == null)
-            //        break;
-            //    string summary = descs[i].TrimEnd();
-            //    packetsDict.Add(summary, pkt);
-            //    packetsListBox.Items.Add(summary);
-            //    if (pkt is EnhancedPacketBlock epb)
-            //    {
-            //        // Packet Studio Light might've saved some data in one of the comments.
-            //        // We are iterating them until we find one in the right format
-            //        foreach (string comment in epb.Options.Comments)
-            //        {
-            //            if (PslcCommentsEncoder.TryDecode(comment, out string pslRepresentation))
-            //            {
-            //                overrides.Add(summary, new PacketOverride()
-            //                {
-            //                    Data = pkt.Data,
-            //                    OriginalText = pslRepresentation,
-            //                });
-            //                break;
-            //            }
-            //        }
-            //    }
-            //    i++;
-            //}
-            //packetsCountLabel.Content = i.ToString();
         }
 
         private async Task UpdatePacketsList()
