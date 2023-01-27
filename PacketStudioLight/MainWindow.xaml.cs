@@ -21,6 +21,7 @@ using PacketDotNet;
 using PacketStudioLight.Extensions;
 using GongSolutions.Wpf.DragDrop;
 using System.Collections.ObjectModel;
+using System.Windows.Controls;
 
 namespace PacketStudioLight
 {
@@ -603,5 +604,6 @@ namespace PacketStudioLight
 
             }
         }
+
     }
 }

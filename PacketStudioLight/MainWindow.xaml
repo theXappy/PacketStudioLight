@@ -7,8 +7,8 @@
         mc:Ignorable="d"
         Title="Packet Studio Light 1.0" Height="900" Width="1400" Icon="/icons8-lightweight-96.png"
         xmlns:dd="urn:gong-wpf-dragdrop"
-
-              >
+        Style="{DynamicResource CustomWindowStyle}"
+>
     <Window.Resources>
         <local:XElementToPacketDescriptionConverter x:Key="MyConverterKey"/>
 
@@ -24,51 +24,68 @@
             <RowDefinition/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Ribbon
-            x:Name="RibbonWin"  SelectedIndex="0" ShowQuickAccessToolBarOnTop="False"
-            Margin="0,-22,0,0" 
-            >
-            <!-- Margin property above is used becuase we don't use a RibbonWindow (Just a Window)
-            And we do that because when mazimizing a RibbonWindow the border gets f*cked and stuff look very
-            amature. See here:
-            https://stackoverflow.com/questions/12567455/wpf-ribbonwindow-ribbon-title-outside-screen
-            -->
+        <DockPanel x:Name="TopBar">
+            <Menu DockPanel.Dock="Top" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" >
+                <MenuItem Header="File">
+                    <MenuItem Header="Open"/>
+                    <MenuItem Header="Save"/>
+                    <MenuItem Header="Exit"/>
+                </MenuItem>
+                <Menu>Edit</Menu>
+            </Menu>
+            <ToolBarTray Orientation="Horizontal" Height="30" IsLocked="True">
+                <ToolBar x:Name="FileToolbar" BorderBrush="Fuchsia">
+                    <Button>
+                        <Image Source="/Images/paste.png" Height="16"/>
+                    </Button>
+                    <Button>
+                        <Image Source="/Images/copy.png" Height="16"/>
+                    </Button>
+                    <Button>
+                        <Image Source="/Images/cut.png" Height="16"/>
+                    </Button>
+                </ToolBar>
+                <ToolBar x:Name="EditToolbar" BorderBrush="Fuchsia">
+                    <Button>
+                        <Image Source="/Images/paste.png" Height="16"/>
+                    </Button>
+                    <Button>
+                        <Image Source="/Images/copy.png" Height="16"/>
+                    </Button>
+                    <Button>
+                        <Image Source="/Images/cut.png" Height="16"/>
+                    </Button>
+                </ToolBar>
+                <ToolBar x:Name="SpecialOpsToolbar" BorderBrush="Fuchsia">
+                    <Button>
+                        <DockPanel>
+                            <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
+                            <TextBlock Margin="5,0">Comment Layers</TextBlock>
+                        </DockPanel>
+                    </Button>
+                    <Button>
+                        <DockPanel>
+                            <Image Source="/Images/hammer.png" Height="16"/>
+                            <TextBlock Margin="5,0">Normalize Hex</TextBlock>
+                        </DockPanel>
+                    </Button>
+                </ToolBar>
+                <ToolBar x:Name="WiresharkToolbar" BorderBrush="Fuchsia">
+                    <Button>
+                        <Image Source="/Images/shark_dir.png" Height="16"/>
+                    </Button>
+                    <Button>
+                        <DockPanel>
+                            <Image Source="/Images/shark.png" Height="16" />
+                            <TextBlock Margin="6,0,4,0">Launch</TextBlock>
+                        </DockPanel>
+                    </Button>
+                </ToolBar>
 
-            <Ribbon.ApplicationMenu>
-                <RibbonApplicationMenu KeyTip="F">
-                    <RibbonApplicationMenuItem Header="Open" ImageSource="Images\open.png" Click="OpenButtonClicked" />
-                    <RibbonApplicationMenuItem Header="Settings" ImageSource="Images\settings.png" Click="SettingsButtonClicked"/>
-                    <RibbonApplicationMenuItem Header="Exit" ImageSource="Images\quit.png" Click="ExitButtonClicked" />
-                </RibbonApplicationMenu>
-            </Ribbon.ApplicationMenu>
-            <RibbonTab Header="Home" KeyTip="H" >
-                <!-- Home  group-->
-                <RibbonGroup x:Name="ClipboardGroup" Header="Home">
-                    <RibbonMenuButton LargeImageSource="Images\paste.png" Label="Paste" KeyTip="V">
-                        <RibbonMenuItem ImageSource="Images\paste.png" Header="Keep Text Only" KeyTip="T"/>
-                        <RibbonMenuItem ImageSource="Images\paste.png" Header="Paste Special..." KeyTip="S"/>
-                    </RibbonMenuButton>
-                    <RibbonButton SmallImageSource="Images\cut.png" Label="Cut" KeyTip="X" />
-                    <RibbonButton SmallImageSource="Images\copy.png" Label="Copy" KeyTip="C" />
-                </RibbonGroup>
-                <!-- Employee And Payroll group-->
-                <RibbonGroup x:Name="hexGroup" Header="Hex Tricks">
-                    <!--<RibbonMenuButton LargeImageSource="Images\personal.png" Label="Employee" KeyTip="V">
-                        <RibbonMenuItem ImageSource="Images\paste.png" Header="Keep Text Only" KeyTip="T"/>
-                        <RibbonMenuItem ImageSource="Images\paste.png" Header="Paste Special..." KeyTip="S"/>
-                    </RibbonMenuButton>
-                    <RibbonButton SmallImageSource="Images\save.png" Label="Save" KeyTip="X" />
-                    <RibbonButton SmallImageSource="Images\add.png" Label="Add" KeyTip="C" />-->
-                    <RibbonButton SmallImageSource="Images\comment.png" Label="Add Layers Comments" Click="AddLayersCommentsButtonClicked" />
-                    <RibbonButton SmallImageSource="Images\hammer.png" Label="Normalize Hex" Click="NormalizeHexClicked"/>
-                </RibbonGroup>
-                <RibbonGroup x:Name="wiresharkGroup" Header="Export">
-                    <RibbonButton LargeImageSource="Images\shark.png" Label="Launch Wireshark" Click="ExportToWiresharkButtonClicked" />
-                </RibbonGroup>
-            </RibbonTab>
-        </Ribbon>
-        <Grid Grid.Row="1">
-            <Grid>
+            </ToolBarTray>
+        </DockPanel>
+        <Grid x:Name="CenterGrid" Grid.Row="1">
+            <Grid x:Name="PanelsGrid">
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -81,7 +98,7 @@
                     <RowDefinition Height="3*"/>
                 </Grid.RowDefinitions>
                 <!-- Grid parts -->
-                <DockPanel Grid.Row="0" Grid.ColumnSpan="3" Background="#FFF0F0F0">
+                <DockPanel x:Name="PacketsListPanel" Grid.Row="0" Grid.ColumnSpan="3">
                     <Label DockPanel.Dock="Top" >Packets List
                     </Label>
                     <Grid Margin="5,0">
@@ -92,7 +109,7 @@
                                   dd:DragDrop.IsDragSource="True"
                                   dd:DragDrop.IsDropTarget="True"
                                   dd:DragDrop.DropHandler="{Binding}"
-                                  Drop="PacketsList_OnDrop"
+                                  Drop="PacketsList_OnDrop" Background="{DynamicResource ControlDefaultBackground}"
                              />
                         <Label x:Name="statusLabel" Margin="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
                                         FontSize="45" Background="#44333333" Visibility="Collapsed">
@@ -103,7 +120,7 @@
                 <!-- Horizontal Splitter -->
                 <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                 <!-- Hex Editor Dock -->
-                <DockPanel Grid.Row="2" Background="#FFF0F0F0">
+                <DockPanel x:Name="HexEditorPanel" Grid.Row="2">
                     <DockPanel DockPanel.Dock="Top" LastChildFill="False">
                         <Label DockPanel.Dock="Left">Packet Editor</Label>
                         <Label Foreground="CornflowerBlue">
@@ -137,29 +154,32 @@
     ShowLineNumbers="True"
     WordWrap="True"
     FontSize="16pt"
-    Margin="5,0,0,0"
-                        TextChanged="packetTextBox_TextChanged_Base" BorderBrush="#FF828790" BorderThickness="1,1,1,1"/>
+    Margin="5,0,0,5"
+                        TextChanged="packetTextBox_TextChanged_Base" 
+    BorderBrush="#FF828790" 
+    BorderThickness="1,1,1,1" Background="{DynamicResource ControlDefaultBackground}"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
                 <GridSplitter Grid.Row="2" Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
                 <!-- Proto Tree Dock -->
-                <DockPanel Grid.Row="2" Grid.Column="2">
-                    <Label DockPanel.Dock="Top" Background="#FFF0F0F0">Protocol Tree</Label>
+                <DockPanel x:Name="TreeViewPAnel" Grid.Row="2" Grid.Column="2">
+                    <Label DockPanel.Dock="Top">Protocol Tree</Label>
                     <local:StretchingTreeView x:Name="treeView"
-                              Margin="0,0,5,0"
+                              Margin="0,0,5,5"
                               ItemsSource="{Binding Path=Root.Elements}"
                               ItemTemplate="{StaticResource template}"
+                              Background="{DynamicResource ControlDefaultBackground}"
                               FontFamily="Consolas" FontSize="14"
                                               BorderThickness="1,1,1,1"
                                               />
                 </DockPanel>
             </Grid>
         </Grid>
-        <DockPanel Grid.Row="2" Background="#FFDFE9F5">
+        <DockPanel x:Name="StatusBar" Grid.Row="2" Background="DodgerBlue">
             <!-- This means nothing at the moment, lol -->
             <Label DockPanel.Dock="Left">Status: OK</Label>
-            <Label x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40">0</Label>
-            <Label DockPanel.Dock="Right" HorizontalAlignment="Right">Packets:</Label>
+            <TextBlock x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40" VerticalAlignment="Center">0</TextBlock>
+            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Padding="10,0" VerticalAlignment="Center">Packets:</TextBlock>
         </DockPanel>
     </Grid>
 </Window>
