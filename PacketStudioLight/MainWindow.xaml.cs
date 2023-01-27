@@ -594,16 +594,5 @@ namespace PacketStudioLight
                 Properties.Settings.Default.Save();
             }
         }
-
-        private void PacketsList_OnDrop(object sender, DragEventArgs e)
-        {
-            var formats = e.Data.GetFormats();
-            if (formats.Length == 1 && formats[0] == "GongSolutions.Wpf.DragDrop")
-            {
-
-
-            }
-        }
-
     }
 }

@@ -25,7 +25,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel x:Name="TopBar">
-            <Menu DockPanel.Dock="Top" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" >
+            <Menu DockPanel.Dock="Top" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="{StaticResource ToolBarTrayBackground}">
                 <MenuItem Header="File">
                     <MenuItem Header="Open"/>
                     <MenuItem Header="Save"/>
@@ -34,7 +34,7 @@
                 <Menu>Edit</Menu>
             </Menu>
             <ToolBarTray Orientation="Horizontal" Height="30" IsLocked="True">
-                <ToolBar x:Name="FileToolbar" BorderBrush="Fuchsia">
+                <ToolBar x:Name="FileToolbar">
                     <Button>
                         <Image Source="/Images/paste.png" Height="16"/>
                     </Button>
@@ -45,7 +45,7 @@
                         <Image Source="/Images/cut.png" Height="16"/>
                     </Button>
                 </ToolBar>
-                <ToolBar x:Name="EditToolbar" BorderBrush="Fuchsia">
+                <ToolBar x:Name="EditToolbar">
                     <Button>
                         <Image Source="/Images/paste.png" Height="16"/>
                     </Button>
@@ -56,7 +56,7 @@
                         <Image Source="/Images/cut.png" Height="16"/>
                     </Button>
                 </ToolBar>
-                <ToolBar x:Name="SpecialOpsToolbar" BorderBrush="Fuchsia">
+                <ToolBar x:Name="SpecialOpsToolbar">
                     <Button>
                         <DockPanel>
                             <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
@@ -70,7 +70,7 @@
                         </DockPanel>
                     </Button>
                 </ToolBar>
-                <ToolBar x:Name="WiresharkToolbar" BorderBrush="Fuchsia">
+                <ToolBar x:Name="WiresharkToolbar">
                     <Button>
                         <Image Source="/Images/shark_dir.png" Height="16"/>
                     </Button>
@@ -85,7 +85,7 @@
             </ToolBarTray>
         </DockPanel>
         <Grid x:Name="CenterGrid" Grid.Row="1">
-            <Grid x:Name="PanelsGrid">
+            <Grid x:Name="PanelsGrid" Background="{DynamicResource AREghZyBrush.Primary.1.Background.Static}">
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -109,7 +109,7 @@
                                   dd:DragDrop.IsDragSource="True"
                                   dd:DragDrop.IsDropTarget="True"
                                   dd:DragDrop.DropHandler="{Binding}"
-                                  Drop="PacketsList_OnDrop" Background="{DynamicResource ControlDefaultBackground}"
+                                  Background="{DynamicResource ToolBarTrayBackground}"
                              />
                         <Label x:Name="statusLabel" Margin="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
                                         FontSize="45" Background="#44333333" Visibility="Collapsed">
@@ -118,7 +118,7 @@
                     </Grid>
                 </DockPanel>
                 <!-- Horizontal Splitter -->
-                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="4" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,0"/>
                 <!-- Hex Editor Dock -->
                 <DockPanel x:Name="HexEditorPanel" Grid.Row="2">
                     <DockPanel DockPanel.Dock="Top" LastChildFill="False">
@@ -147,20 +147,21 @@
                         </Label>
                     </DockPanel>
                     <avalonEdit:TextEditor
-    xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
-    x:Name="packetTextBox"
-    FontFamily="Consolas"
-    SyntaxHighlighting="C#"
-    ShowLineNumbers="True"
-    WordWrap="True"
-    FontSize="16pt"
-    Margin="5,0,0,5"
-                        TextChanged="packetTextBox_TextChanged_Base" 
-    BorderBrush="#FF828790" 
-    BorderThickness="1,1,1,1" Background="{DynamicResource ControlDefaultBackground}"/>
+                            xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+                            x:Name="packetTextBox"
+                            FontFamily="Consolas"
+                            SyntaxHighlighting="C#"
+                            ShowLineNumbers="True"
+                            WordWrap="True"
+                            FontSize="16pt"
+                            Margin="5,0,0,5"
+                            TextChanged="packetTextBox_TextChanged_Base" 
+                            Background="{DynamicResource ToolBarTrayBackground}"
+                            BorderBrush="#FF828790" 
+                            BorderThickness="1,1,1,1"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
-                <GridSplitter Grid.Row="2" Grid.Column="1" Width="5" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+                <GridSplitter Grid.Row="2" Grid.Column="1" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Margin="0,2"/>
                 <!-- Proto Tree Dock -->
                 <DockPanel x:Name="TreeViewPAnel" Grid.Row="2" Grid.Column="2">
                     <Label DockPanel.Dock="Top">Protocol Tree</Label>
@@ -168,7 +169,8 @@
                               Margin="0,0,5,5"
                               ItemsSource="{Binding Path=Root.Elements}"
                               ItemTemplate="{StaticResource template}"
-                              Background="{DynamicResource ControlDefaultBackground}"
+                              Background="{DynamicResource ToolBarTrayBackground}"
+                              BorderBrush="{DynamicResource ToolBarHorizontalBorder}"
                               FontFamily="Consolas" FontSize="14"
                                               BorderThickness="1,1,1,1"
                                               />
