@@ -14,7 +14,7 @@
 
         <HierarchicalDataTemplate x:Key="template" ItemsSource="{Binding Path=Elements}">
             <StackPanel Orientation="Horizontal" Width="{Binding Width, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeView}}}" >
-                <TextBlock Text="{Binding Converter={StaticResource MyConverterKey}}"/>
+                <TextBlock Text="{Binding Converter={StaticResource MyConverterKey}}" Foreground="White"/>
             </StackPanel>
         </HierarchicalDataTemplate>
     </Window.Resources>
@@ -25,45 +25,70 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel x:Name="TopBar">
-            <Menu DockPanel.Dock="Top" Height="25" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="{StaticResource ToolBarTrayBackground}">
-                <MenuItem Header="File">
-                    <MenuItem Header="Open"/>
-                    <MenuItem Header="Save"/>
-                    <MenuItem Header="Exit"/>
+            <Menu DockPanel.Dock="Top" Background="{StaticResource ToolBarTrayBackground}" Padding="4">
+                <MenuItem Header="File" VerticalAlignment="Center" Padding="10,2">
+                    <MenuItem Header="Open" Click="OpenButtonClicked">
+                        <MenuItem.Icon>
+                            <Image Source="Images\tiny_folder.png"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Save" Click="SaveClicked">
+                        <MenuItem.Icon>
+                            <Image Source="Images\tiny_save.png"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="Settings" Click="SettingsButtonClicked">
+                        <MenuItem.Icon>
+                            <Image Source="Images\settings.png"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="Exit" Click="ExitButtonClicked">
+                        <MenuItem.Icon>
+                            <Image Source="Images\quit.png"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </MenuItem>
-                <Menu>Edit</Menu>
+                <MenuItem Padding="10,2" Header="Edit"/>
+                <MenuItem Padding="10,2" Header="View">
+                    <MenuItem Header="De-emphasis 0x00 in Hex Editor" IsCheckable="False" Click="ChangeHexEditorZeroesEmphasis"/>
+                </MenuItem>
             </Menu>
-            <ToolBarTray Orientation="Horizontal" Height="30" IsLocked="True">
+            <ToolBarTray Orientation="Horizontal" Height="34">
                 <ToolBar x:Name="FileToolbar">
-                    <Button>
-                        <Image Source="/Images/paste.png" Height="16"/>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="OpenButtonClicked">
+                        <Image Source="/Images/tiny_folder.png" Height="14"/>
                     </Button>
-                    <Button>
-                        <Image Source="/Images/copy.png" Height="16"/>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SaveClicked">
+                        <Image Source="/Images/tiny_save.png" Height="14"/>
                     </Button>
-                    <Button>
-                        <Image Source="/Images/cut.png" Height="16"/>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SaveClicked">
+                        <Image Source="/Images/tiny_save_as.png" Height="14"/>
                     </Button>
                 </ToolBar>
                 <ToolBar x:Name="EditToolbar">
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="PasteClicked">
                         <Image Source="/Images/paste.png" Height="16"/>
                     </Button>
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CopyClicked">
                         <Image Source="/Images/copy.png" Height="16"/>
                     </Button>
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CutClicked">
                         <Image Source="/Images/cut.png" Height="16"/>
                     </Button>
                 </ToolBar>
                 <ToolBar x:Name="SpecialOpsToolbar">
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="AddLayersCommentsButtonClicked"
+                            ToolTip="Add comments before every recognizable protocol in the hex editor."
+                            >
                         <DockPanel>
                             <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
                             <TextBlock Margin="5,0">Comment Layers</TextBlock>
                         </DockPanel>
                     </Button>
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NormalizeHexClicked"
+                            ToolTip="Normalize the text in the hex editor. Result will be a continuous hex string without comments or new lines.">
                         <DockPanel>
                             <Image Source="/Images/hammer.png" Height="16"/>
                             <TextBlock Margin="5,0">Normalize Hex</TextBlock>
@@ -71,13 +96,13 @@
                     </Button>
                 </ToolBar>
                 <ToolBar x:Name="WiresharkToolbar">
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked">
                         <Image Source="/Images/shark_dir.png" Height="16"/>
                     </Button>
-                    <Button>
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="ExportToWiresharkButtonClicked">
                         <DockPanel>
                             <Image Source="/Images/shark.png" Height="16" />
-                            <TextBlock Margin="6,0,4,0">Launch</TextBlock>
+                            <TextBlock Margin="6,0,4,0">Export To Wireshark</TextBlock>
                         </DockPanel>
                     </Button>
                 </ToolBar>
@@ -150,12 +175,13 @@
                             xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
                             x:Name="packetTextBox"
                             FontFamily="Consolas"
-                            SyntaxHighlighting="C#"
                             ShowLineNumbers="True"
                             WordWrap="True"
                             FontSize="16pt"
                             Margin="5,0,0,5"
                             TextChanged="packetTextBox_TextChanged_Base" 
+                            d:Text="00 11 22"
+                            Foreground="{DynamicResource AREghZyBrush.Foreground.Static}"
                             Background="{DynamicResource ToolBarTrayBackground}"
                             BorderBrush="#FF828790" 
                             BorderThickness="1,1,1,1"/>

@@ -8,6 +8,8 @@
         Title="Packet Studio Light · Settings" Height="135" Width="370"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
+                Style="{DynamicResource CustomWindowStyle}"
+
         >
     <Grid Margin="5">
         <Grid.RowDefinitions>
@@ -17,7 +19,12 @@
         </Grid.RowDefinitions>
         <DockPanel>
             <Label DockPanel.Dock="Top">Wireshark Path:</Label>
-            <ComboBox x:Name="sharksComboBox" DockPanel.Dock="Top"/>
+            <DockPanel DockPanel.Dock="Top">
+                <Button DockPanel.Dock="Right" Margin="1,0" Padding="2,0" Click="ButtonBase_OnClick">
+                    <Image Source="Images/tiny_folder.png" Height="13"/>
+                </Button>
+                <ComboBox x:Name="sharksComboBox" DockPanel.Dock="Top"/>
+            </DockPanel>
         </DockPanel>
         <Grid DockPanel.Dock="Bottom" Grid.Row="2">
             <Grid.ColumnDefinitions>

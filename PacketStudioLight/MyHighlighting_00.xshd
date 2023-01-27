@@ -3,6 +3,7 @@
     <Color name="PacketDefinition" foreground="BlueViolet" />
     <Color name="Comment" foreground="LightGreen" />
     <Color name="String" foreground="LightSalmon" />
+    <Color name="Zeroes" foreground="Gray" />
     
     <!-- This is the main ruleset. -->
     <RuleSet>
@@ -19,6 +20,11 @@
                 <!-- nested span for escape sequences -->
                 <Span begin="\\" end="." />
             </RuleSet>
+        </Span>
+
+        <Span color="Zeroes">
+	        <Begin>00</Begin>
+	        <End></End>
         </Span>
     </RuleSet>
 </SyntaxDefinition>

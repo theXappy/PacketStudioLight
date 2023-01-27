@@ -19,77 +19,18 @@ using FastPcapng;
 using PacketGen;
 using PacketDotNet;
 using PacketStudioLight.Extensions;
-using GongSolutions.Wpf.DragDrop;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace PacketStudioLight
 {
-    class PacketsListBoxViewModel : IDropTarget
-    {
-        public ObservableCollection<string> MyPacketsList { get; set; }
-
-        public event EventHandler<PacketMovedEventArgs> Updated;
-
-        public PacketsListBoxViewModel(ObservableCollection<string> myPacketsList)
-        {
-            MyPacketsList = myPacketsList;
-        }
-
-        void IDropTarget.DragOver(IDropInfo dropInfo)
-        {
-            //ExampleItemViewModel sourceItem = dropInfo.Data as ExampleItemViewModel;
-            //ExampleItemViewModel targetItem = dropInfo.TargetItem as ExampleItemViewModel;
-
-            //if (sourceItem != null && targetItem != null && targetItem.CanAcceptChildren)
-            //{
-            dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
-            dropInfo.Effects = DragDropEffects.Move;
-            //}
-        }
-
-        void IDropTarget.Drop(IDropInfo dropInfo)
-        {
-            int toIndex = dropInfo.InsertIndex;
-            int fromIndex = MyPacketsList.IndexOf(dropInfo.Data as string);
-            if (toIndex > fromIndex)
-            {
-                // When removing the packet from the current index, it moves the dest index back by 1
-                toIndex = toIndex - 1;
-            }
-            if (fromIndex == toIndex)
-                return;
-            // First let's move the UI elemenmts to show responsiveness to the user
-            string textualItemToMove = MyPacketsList[fromIndex];
-            MyPacketsList.RemoveAt(fromIndex);
-            MyPacketsList.Insert(toIndex, textualItemToMove);
-
-            // Finally ask the window to move pacets in the memory pcapng and  re-generate a packets list
-            // (to, at least, fix indexes & timestamps. Possibly also the "info column" would be affected)
-            Updated?.Invoke(this, new PacketMovedEventArgs(fromIndex, toIndex));
-        }
-    }
-
-    public class PacketMovedEventArgs : EventArgs
-    {
-        public int FromIndex { get; set; }
-        public int ToIndex { get; set; }
-
-        public PacketMovedEventArgs(int fromIndex, int toIndex)
-        {
-            FromIndex = fromIndex;
-            ToIndex = toIndex;
-        }
-    }
-
-
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        string _wsDir;
+        private string _wsDir { get; set; }
         string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
         TSharkInterop op => new TSharkInterop(TsharkPath);
@@ -98,6 +39,7 @@ namespace PacketStudioLight
 
         public MainWindow()
         {
+            LefToRightHack.Init();
             InitializeComponent();
             var myAssembly = typeof(MainWindow).Assembly;
             using (Stream s = File.OpenRead("MyHighlighting.xshd"))
@@ -109,7 +51,6 @@ namespace PacketStudioLight
             }
 
             _wsDir = Properties.Settings.Default.WiresharkDirectory.Trim('"', ' ');
-
         }
 
         private class PacketOverride
@@ -119,7 +60,6 @@ namespace PacketStudioLight
             public LinkLayers? LinkLayer { get; set; }
         }
 
-        Dictionary<string, IPacket> _packetsDict;
         Dictionary<int, PacketOverride> _overrides;
 
         private async void OpenButtonClicked(object sender, RoutedEventArgs e)
@@ -143,7 +83,6 @@ namespace PacketStudioLight
             packetTextBox.Text = "";
             statusLabel.Content = "Loading...";
             statusLabel.Visibility = Visibility.Visible;
-            _packetsDict = new Dictionary<string, IPacket>();
             _overrides = new();
 
 
@@ -212,6 +151,8 @@ namespace PacketStudioLight
 
         private async Task UpdatePacketsList()
         {
+            // When you are ready to implement Packet List Coloring use this line
+            // string[] results = await op.GetTextOutputAsync(_memoryPcapng);
             string[] results = await op.GetPacketsDescriptions(_memoryPcapng);
             var newDataContext = new PacketsListBoxViewModel(new ObservableCollection<string>(results));
             newDataContext.Updated += HandlePacketsDraggedAndDropped;
@@ -472,7 +413,6 @@ namespace PacketStudioLight
         {
             try
             {
-                string summary = packetsListBox.SelectedItem as string;
                 string originalText = packetTextBox.Text;
                 string[] lines = packetTextBox.Text.Split('\n');
                 // Removing comment lines and whitespaces
@@ -487,7 +427,7 @@ namespace PacketStudioLight
                 // Calling this makes sure the hex is valid (otherwise an exception is thrown)
                 byte[] data = GetBytesFromHex(joined);
 
-                IPacket pkt = _packetsDict[summary];
+                IPacket pkt = _memoryPcapng.GetPacket(packetsListBox.SelectedIndex);
                 LinkLayerType llt = LinkLayerType.Ethernet;
                 if (pkt is EnhancedPacketBlock)
                 {
@@ -568,12 +508,6 @@ namespace PacketStudioLight
             }
         }
 
-        private void SelectWiresharkVersionButtonClicked(object sender, RoutedEventArgs e)
-        {
-            // TODO
-            MessageBox.Show("Not supported yet. Current version: " + WiresharkPath);
-        }
-
         private void ExitButtonClicked(object sender, RoutedEventArgs e)
         {
             // Running in task so the GUI doesn't freeze
@@ -592,6 +526,50 @@ namespace PacketStudioLight
                 _wsDir = settings.SelectedWiresharkPath;
                 Properties.Settings.Default.WiresharkDirectory = _wsDir;
                 Properties.Settings.Default.Save();
+            }
+        }
+
+        private void SaveClicked(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Not implemented yet. Try exporting to Wireshark and using its save feature.");
+        }
+
+        private void PasteClicked(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void CopyClicked(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void CutClicked(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ChangeHexEditorZeroesEmphasis(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is MenuItem mi))
+            {
+                return;
+            }
+
+            mi.IsChecked = !mi.IsChecked;
+            bool deEmphasis = mi.IsChecked;
+
+            string highlights = "MyHighlighting.xshd";
+            if (deEmphasis)
+                highlights = "MyHighlighting_00.xshd";
+
+            using (Stream s = File.OpenRead(highlights))
+            {
+                using (XmlReader reader = new XmlTextReader(s))
+                {
+                    packetTextBox.SyntaxHighlighting =
+                        HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                }
             }
         }
     }

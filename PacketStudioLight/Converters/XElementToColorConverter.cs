@@ -38,21 +38,21 @@ namespace PacketStudioLight
                 {"normal", Brushes.Transparent },
                 {"error",  new SolidColorBrush(Color.FromRgb(255, 92, 92)) },
                 {"warn", Brushes.Yellow },
-                {"layer",  new SolidColorBrush(Color.FromRgb(240, 240, 240)) }
+                {"layer",  new SolidColorBrush(Color.FromRgb(70, 70, 70)) }
             };
             stateToBrushes[ITEM_STATE_SELECTED] = new Dictionary<string, Brush>
             {
-                {"normal", new SolidColorBrush(Color.FromRgb(205, 232, 255)) }, // TODO: Make this transparent-ish blue instead of opaque
+                {"normal", new SolidColorBrush(Color.FromRgb(30, 144, 255)) }, // TODO: Make this transparent-ish blue instead of opaque
                 {"error",  new SolidColorBrush(Color.FromRgb(205, 101, 124)) },
                 {"warn",  new SolidColorBrush(Color.FromRgb(199, 222, 117)) },
-                {"layer",  new SolidColorBrush(Color.FromRgb(193, 220, 243)) },
+                {"layer",  new SolidColorBrush(Color.FromRgb(44, 44, 44)) },
             };
             stateToBrushes[ITEM_STATE_SELECTED_INACTIVE] = new Dictionary<string, Brush>
             {
-                {"normal", new SolidColorBrush(Color.FromRgb(217, 217, 217)) },
+                {"normal", new SolidColorBrush(Color.FromRgb(65, 121, 177)) },
                 {"error",  new SolidColorBrush(Color.FromRgb(217, 78, 78)) },
                 {"warn",  new SolidColorBrush(Color.FromRgb(210, 206, 71)) },
-                {"layer",  new SolidColorBrush(Color.FromRgb(204, 204, 204)) },
+                {"layer",  new SolidColorBrush(Color.FromRgb(55, 55, 55)) },
             };
 
         }

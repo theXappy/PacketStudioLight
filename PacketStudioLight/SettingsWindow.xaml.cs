@@ -1,9 +1,11 @@
 ﻿using PacketStudioLight.Interop;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Forms;
 
 namespace PacketStudioLight
 {
@@ -12,7 +14,7 @@ namespace PacketStudioLight
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        List<string> paths = new List<string>();
+        ObservableCollection<string> paths = new ObservableCollection<string>();
 
         public string SelectedWiresharkPath => sharksComboBox.SelectedItem as string;
 
@@ -21,7 +23,10 @@ namespace PacketStudioLight
             InitializeComponent();
 
             List<WiresharkDirectory>? dirs = SharksFinder.GetDirectories();
-            paths.AddRange(dirs.Select(d => Path.GetDirectoryName(d.WiresharkPath) + Path.DirectorySeparatorChar));
+            foreach (var path in dirs.Select(d => Path.GetDirectoryName(d.WiresharkPath) + Path.DirectorySeparatorChar))
+            {
+                paths.Add(path);
+            }
             sharksComboBox.ItemsSource = paths;
         }
 
@@ -47,6 +52,29 @@ namespace PacketStudioLight
         {
             DialogResult = false;
             Close();
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog
+            {
+                Filter = "Wireshark.exe|Wireshark.exe"
+            };
+            DialogResult res = ofd.ShowDialog();
+            if (res == System.Windows.Forms.DialogResult.OK)
+            {
+                if (ofd.CheckFileExists)
+                {
+                    string dirPath = Path.GetDirectoryName(ofd.FileName);
+                    if (SharksFinder.TryGetByPath(dirPath, out WiresharkDirectory wd))
+                    {
+                        if (!dirPath.EndsWith(Path.DirectorySeparatorChar))
+                            dirPath += Path.DirectorySeparatorChar;
+                        paths.Add(dirPath);
+                        SetCurrentWiresharkDir(dirPath);
+                    }
+                }
+            }
         }
     }
 }

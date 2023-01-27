@@ -24,11 +24,18 @@
 		<None Remove="Images\settings.png" />
 		<None Remove="Images\shark.png" />
 		<None Remove="Images\shark_dir.png" />
+		<None Remove="Images\tiny_folder.png" />
+		<None Remove="Images\tiny_save.png" />
+		<None Remove="Images\tiny_save_as.png" />
 		<None Remove="MyHighlighting.xshd" />
+		<None Remove="MyHighlighting_00.xshd" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Content Include="feather.ico" />
+		<Content Include="MyHighlighting_00.xshd">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
 		<Content Include="MyHighlighting.xshd">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
@@ -50,6 +57,9 @@
 		<Resource Include="Images\paste.png" />
 		<Resource Include="Images\quit.png" />
 		<Resource Include="Images\shark_dir.png" />
+		<Resource Include="Images\tiny_folder.png" />
+		<Resource Include="Images\tiny_save.png" />
+		<Resource Include="Images\tiny_save_as.png" />
 	</ItemGroup>
 
 	<ItemGroup>

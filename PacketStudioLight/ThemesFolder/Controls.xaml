@@ -451,7 +451,40 @@
                                 </AdornerDecorator>
                                 <Grid Height="30" x:Name="titlebar" Background="{TemplateBinding BorderBrush}" VerticalAlignment="Top" Margin="0">
                                     <DockPanel Margin="0,0,130,0">
-                                        <Image HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,4,0,0" Source="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}" Height="24" />
+                                        <!-- Shai: I wrapped the image with a button so we can double click it to close the window -->
+                                        <Button x:Name="btnClose2"
+                                                Padding="0,0,0,0"
+                                                Margin="0,-2,0,2"
+                                                MaxWidth="30"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                Width="40"
+                                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                                MouseDoubleClick="CloseWindow_Event">
+                                            <Button.Style>
+                                                <!-- Shai: Overriding style to remove the background when mouse is over (There's no MouseOverBackground property...) -->
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="Background" Value="Transparent"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                                <Border Background="{TemplateBinding Background}">
+                                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Background" Value="Transparent"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <Image HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,4,0,0"
+                                                   Source="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}" Height="24"/>
+                                        </Button>
+                                        <!-- Shai: End -->
                                         <TextBlock Margin="5,3" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextWrapping="NoWrap" FontSize="14" Width="Auto" Foreground="{TemplateBinding Foreground}" Text="{Binding Title, RelativeSource={RelativeSource TemplatedParent}}" Grid.Column="1" TextAlignment="Left" />
                                     </DockPanel>
                                     <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Right">

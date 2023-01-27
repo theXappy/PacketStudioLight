@@ -291,6 +291,37 @@ namespace PacketStudioLight
 
             return cli;
         }
+        public async Task<string[]> GetTextOutputAsync(MemoryPcapng memPcapng)
+        {
+            StringBuilder sbOut = new StringBuilder();
+            StringBuilder sbErr = new StringBuilder();
+
+            var wsSender = new WiresharkPipeSender();
+            string pipeName = "psl_2_ts_pipe" + (new Random()).Next();
+
+            // Run sender in 1st thread
+            var senderTask = wsSender.SendPcapngAsync(pipeName, memPcapng);
+
+            // Run wireshark on 2nd thread
+            Command command = CliWrap.Cli.Wrap(TsharkPath)
+                .WithArguments(GetTextOutputArgs(@"\\.\pipe\" + pipeName))
+                .WithStandardOutputPipe(PipeTarget.ToStringBuilder(sbOut, Encoding.UTF8))
+                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(sbErr, Encoding.UTF8));
+            CommandTask<CommandResult>? wsSessionTask = command.ExecuteAsync();
+
+            // Wait for wireshark to exit
+            try
+            {
+                await wsSessionTask.Task;
+                return sbOut.ToString().Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            }
+            catch (Exception e)
+            {
+                Debugger.Break();
+                throw;
+            }
+        }
+
 
         private string GetPdmlArgs(string pcapPath, List<string> toBeEnabledHeurs = null, List<string> toBeDisabledHeurs = null)
         {
