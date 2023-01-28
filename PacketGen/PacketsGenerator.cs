@@ -1,4 +1,5 @@
 ﻿using PacketDotNet;
+using PacketDotNet.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -14,10 +15,10 @@ namespace PacketGen
         static PacketsGenerator()
         {
             _generators = new Dictionary<string, MethodInfo>();
-            foreach(var method in typeof(PacketsGenerator).GetMethods())
+            foreach (var method in typeof(PacketsGenerator).GetMethods())
             {
                 string upperName = method.Name.ToUpper();
-                if(upperName.StartsWith("GENERATE") && method.GetParameters().Length == 1)
+                if (upperName.StartsWith("GENERATE") && method.GetParameters().Length == 1)
                 {
                     string rest = upperName.Substring("GENERATE".Length);
                     _generators.Add(rest, method);
@@ -25,21 +26,21 @@ namespace PacketGen
             }
         }
 
-        public static Packet Generate(string type, Dictionary<string, string> variables)
+        public static (Packet, LinkLayers) Generate(string type, Dictionary<string, string> variables)
         {
             string upperType = type.ToUpper();
             if (!_generators.TryGetValue(upperType, out var generator))
                 throw new Exception($"Couldn't find generator for '{type}'");
 
-            Packet res = generator.Invoke(null, new object[1] { variables }) as Packet;
+            (Packet res, LinkLayers firstLayer) = (ValueTuple<Packet, LinkLayers>)generator.Invoke(null, new object[] { variables });
 
             // TODO: Make this an extension method?
             while (res.ParentPacket != null)
                 res = res.ParentPacket;
-            return res;
+            return (res, firstLayer);
         }
 
-        public static UdpPacket GenerateUdp(Dictionary<string,string> variables)
+        public static (Packet, LinkLayers) GenerateUdp(Dictionary<string, string> variables)
         {
             // UDP_PAYLOAD = {
             // aa bb cc dd
@@ -52,24 +53,24 @@ namespace PacketGen
                 UDP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
 
             ushort UDP_SOURCE_PORT = 1;
-            if(variables.TryGetValue(nameof(UDP_SOURCE_PORT), out string srcPort))
+            if (variables.TryGetValue(nameof(UDP_SOURCE_PORT), out string srcPort))
                 ushort.TryParse(srcPort, out UDP_SOURCE_PORT);
 
             ushort UDP_DEST_PORT = 1;
-            if(variables.TryGetValue(nameof(UDP_DEST_PORT), out string dstPort))
+            if (variables.TryGetValue(nameof(UDP_DEST_PORT), out string dstPort))
                 ushort.TryParse(dstPort, out UDP_DEST_PORT);
 
             UdpPacket udp = new UdpPacket(UDP_SOURCE_PORT, UDP_DEST_PORT);
             udp.PayloadData = UDP_PAYLOAD;
 
-            IPv4Packet ip = GenerateIp(variables);
+            (Packet ip, LinkLayers firstLayer) = GenerateIp(variables);
             ip.PayloadPacket = udp;
 
-            return udp;
+            return (ip, firstLayer);
         }
 
-        public static IPv4Packet GenerateIpv4(Dictionary<string, string> variables) => GenerateIp(variables);
-        public static IPv4Packet GenerateIp(Dictionary<string, string> variables)
+        public static (Packet, LinkLayers) GenerateIpv4(Dictionary<string, string> variables) => GenerateIp(variables);
+        public static (Packet, LinkLayers) GenerateIp(Dictionary<string, string> variables)
         {
             // IP_PAYLOAD = {
             // aa bb cc dd
@@ -99,13 +100,13 @@ namespace PacketGen
             ip.PayloadData = IP_PAYLOAD;
             ip.Protocol = IP_NEXT_TYPE;
 
-            EthernetPacket eth = GenerateEthernet(variables);
+            (Packet eth, LinkLayers firstLayer) = GenerateEthernet(variables);
             eth.PayloadPacket = ip;
 
-            return ip;
+            return (ip, firstLayer);
         }
 
-        public static EthernetPacket GenerateEthernet(Dictionary<string, string> variables)
+        public static (Packet, LinkLayers) GenerateEthernet(Dictionary<string, string> variables)
         {
             // ETH_PAYLOAD = {
             // aa bb cc dd
@@ -133,10 +134,10 @@ namespace PacketGen
             EthernetPacket eth = new EthernetPacket(ETH_SOURCE_ADDR, ETH_DEST_ADDR, ETH_NEXT_TYPE);
             eth.PayloadData = ETH_PAYLOAD;
 
-            return eth;
+            return (eth, LinkLayers.Ethernet);
         }
 
-        public static EthernetPacket GenerateRaw(Dictionary<string, string> variables)
+        public static (Packet, LinkLayers) GenerateRaw(Dictionary<string, string> variables)
         {
             // RAW_PAYLOAD = {
             // aa bb cc dd
@@ -146,18 +147,38 @@ namespace PacketGen
             byte[] RAW_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(RAW_PAYLOAD), out string payloadHex))
                 RAW_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
-            
-            string ENCAPSULATION_TYPE;
-            if (variables.TryGetValue(nameof(ENCAPSULATION_TYPE), out ENCAPSULATION_TYPE))
-            {
-                if (ENCAPSULATION_TYPE.ToUpper() != "ETHERNET")
-                    throw new Exception("Other raw types not supported. Just Ethernet for now.");
-            }
-                
-            EthernetPacket eth = Packet.ParsePacket(LinkLayers.Ethernet, RAW_PAYLOAD) as EthernetPacket;
 
-            return eth;
+
+            LinkLayers linkLayer;
+            string ENCAPSULATION_TYPE;
+            if (!variables.TryGetValue(nameof(ENCAPSULATION_TYPE), out ENCAPSULATION_TYPE))
+            {
+                throw new Exception($"Link Type variable ({nameof(ENCAPSULATION_TYPE)}) must be provided.");
+            }
+
+            if (int.TryParse(ENCAPSULATION_TYPE, out int encTypeNum))
+            {
+                linkLayer = (LinkLayers)encTypeNum;
+            }
+            else
+            {
+                if (!Enum.TryParse(ENCAPSULATION_TYPE, true, out linkLayer))
+                    throw new Exception($"Can't parse link layer '{ENCAPSULATION_TYPE}'");
+            }
+
+            RawPacket raw = new RawPacket(RAW_PAYLOAD);
+
+            return (raw, linkLayer);
         }
 
+    }
+
+    public class RawPacket : Packet
+    {
+        public RawPacket(byte[] data)
+        {
+            this.Header = new ByteArraySegment(Array.Empty<byte>());
+            this.PayloadData = data;
+        }
     }
 }

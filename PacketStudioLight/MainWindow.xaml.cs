@@ -11,17 +11,14 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using System.Windows.Controls.Ribbon;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Xml;
 using FastPcapng;
 using PacketGen;
 using PacketDotNet;
-using PacketStudioLight.Extensions;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace PacketStudioLight
 {
@@ -176,9 +173,6 @@ namespace PacketStudioLight
             }
         }
 
-        // This stays here in case we go back to a simple text box
-        private void packetTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-            => packetTextBox_TextChanged_Base(sender, e);
         // This overload is here because that's the signature for the event in case of AvalonEdit
         private void packetTextBox_TextChanged_Base(object sender, EventArgs e)
         {
@@ -200,14 +194,14 @@ namespace PacketStudioLight
                     (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
 
 
-                    Packet p = PacketsGenerator.Generate(type, variables);
+                    (Packet p, LinkLayers linkLayer) = PacketsGenerator.Generate(type, variables);
 
                     data = p.Bytes;
                     pktOverride = new PacketOverride()
                     {
                         Data = data,
                         OriginalText = originalText,
-                        LinkLayer = p.GetLayerType()
+                        LinkLayer = linkLayer
                     };
                     _overrides[pktIndex] = pktOverride;
                 }
@@ -226,7 +220,7 @@ namespace PacketStudioLight
 
                     data = GetBytesFromHex(joined);
 
-                    // User changed the definiton of the packet.
+                    // User changed the definition of the packet.
                     // If it's a custom definition (with new lines, comments, spaces to seperate bytes...)
                     // we want to store it as an "override".
                     // If it's just the normal hex stream (either because we JUST opened this packet OR the user
@@ -475,7 +469,43 @@ namespace PacketStudioLight
 
         private void SaveClicked(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Not implemented yet. Try exporting to Wireshark and using its save feature.");
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "Pcapng File (*.pcapng)|*.pcapng";
+            bool? res = sfd.ShowDialog();
+            if (res != true)
+                return;
+            string capPath = sfd.FileName;
+            if (Path.GetExtension(capPath) != ".pcapng")
+            {
+                MessageBox.Show("Error: File did not have a .pcapng extension", "Error");
+                return;
+            }
+
+            if (File.Exists(capPath))
+            {
+                var overrideRes = MessageBox.Show($"Overriding existing file {capPath} ?\n", "Save",
+                    MessageBoxButton.YesNo);
+                if (overrideRes != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            FileStream fs;
+            try
+            {
+                fs = File.Open(capPath, FileMode.Create, FileAccess.Write);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Couldn't open destination file. Error:\n" + e);
+                return;
+            }
+            
+
+            ApplyOverrides();
+            _memoryPcapng.WriteTo(fs);
+            fs.Close();
         }
 
         private void PasteClicked(object sender, RoutedEventArgs e)
