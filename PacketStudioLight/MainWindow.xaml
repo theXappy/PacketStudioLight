@@ -183,7 +183,7 @@
                             d:Text="00 11 22"
                             Foreground="{DynamicResource AREghZyBrush.Foreground.Static}"
                             Background="{DynamicResource ToolBarTrayBackground}"
-                            BorderBrush="#FF828790" 
+                            BorderBrush="{DynamicResource ToolBarHorizontalBorder}"
                             BorderThickness="1,1,1,1"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
