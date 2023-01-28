@@ -17,6 +17,7 @@
 		<None Remove="Images\copy.png" />
 		<None Remove="Images\cut.png" />
 		<None Remove="Images\hammer.png" />
+		<None Remove="Images\new_file.png" />
 		<None Remove="Images\open.png" />
 		<None Remove="Images\options.png" />
 		<None Remove="Images\paste.png" />
@@ -42,6 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Images\new_file.png" />
 		<Resource Include="Images\settings.png" />
 		<Resource Include="Images\shark.png" />
 	</ItemGroup>

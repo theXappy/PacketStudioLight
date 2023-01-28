@@ -57,6 +57,9 @@
             </Menu>
             <ToolBarTray Orientation="Horizontal" Height="34">
                 <ToolBar x:Name="FileToolbar">
+                    <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewFileClicked">
+                        <Image Source="/Images/new_file.png" Height="14"/>
+                    </Button>
                     <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="OpenButtonClicked">
                         <Image Source="/Images/tiny_folder.png" Height="14"/>
                     </Button>

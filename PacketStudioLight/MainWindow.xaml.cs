@@ -515,7 +515,7 @@ namespace PacketStudioLight
 
         private void CopyClicked(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+             new NotImplementedException();
         }
 
         private void CutClicked(object sender, RoutedEventArgs e)
@@ -545,6 +545,32 @@ namespace PacketStudioLight
                         HighlightingLoader.Load(reader, HighlightingManager.Instance);
                 }
             }
+        }
+
+        private async void NewFileClicked(object sender, RoutedEventArgs e)
+        {
+            packetsListBox.SelectedIndex = -1;
+            packetsListBox.DataContext = null;
+            packetsListBox.IsEnabled = false;
+            packetTextBox.Text = "";
+            statusLabel.Content = "Creating...";
+            statusLabel.Visibility = Visibility.Visible;
+            _overrides = new();
+
+            Stopwatch sw = Stopwatch.StartNew();
+            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 1");
+            TempPacketsSaver saver = new TempPacketsSaver();
+            string tempFile = await Task.Run(() => saver.WritePacket(
+                new TempPacketSaveData(new byte[] { 0x11, 0x22, 0x33 }, LinkLayerType.Ethernet)));
+            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 2");
+
+            _memoryPcapng = MemoryPcapng.ParsePcapng(tempFile);
+            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 3");
+            await UpdatePacketsList();
+            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 4");
+
+            packetsListBox.IsEnabled = true;
+            statusLabel.Visibility = Visibility.Collapsed;
         }
     }
 }
