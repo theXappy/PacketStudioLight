@@ -602,7 +602,7 @@ namespace PacketStudioLight
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Couldn't open destination file. Error:\n" + e);
+                MessageBox.Show("Couldn't open destination file. Error:\n" + ex);
                 return;
             }
 
@@ -612,11 +612,8 @@ namespace PacketStudioLight
             fs.Close();
         }
 
-        private void PasteClicked(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
+        private void CutClicked(object sender, RoutedEventArgs e) => packetTextBox.Cut();
+        private void PasteClicked(object sender, RoutedEventArgs e) => packetTextBox.Paste();
         private void CopyClicked(object sender, RoutedEventArgs e)
         {
             packetTextBox.Copy();
@@ -626,7 +623,7 @@ namespace PacketStudioLight
         private void CopyCSharpClicked(object sender, RoutedEventArgs e)
         {
             packetTextBox.Copy();
-            var x = Clipboard.GetText() as string;
+            var x = Clipboard.GetText();
 
             byte[] bArr;
             try
@@ -649,11 +646,6 @@ namespace PacketStudioLight
             statusBarStatusLabel.Text = status;
             okStatusImage.Visibility = isError ? Visibility.Collapsed : Visibility.Visible;
             errorStatusImage.Visibility = isError ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void CutClicked(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         private void ChangeHexEditorZeroesEmphasis(object sender, RoutedEventArgs e)
