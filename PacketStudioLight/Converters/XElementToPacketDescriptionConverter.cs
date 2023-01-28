@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Xml.Linq;
 using System.Windows.Data;
+using System.Xml.Linq;
 
-namespace PacketStudioLight
+namespace PacketStudioLight.Converters
 {
     public class XElementToPacketDescriptionConverter : IValueConverter
     {

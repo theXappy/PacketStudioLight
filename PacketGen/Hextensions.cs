@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PacketGen
 {
-    internal static class Hextensions
+    public static class Hextensions
     {
         public static string GetHex(this byte[] data) => BitConverter.ToString(data).Replace("-", String.Empty);
 

@@ -27,12 +27,42 @@ namespace PacketStudioLight
     /// </summary>
     public partial class MainWindow : Window
     {
+        public class FileLoadUiFreezeContext : IDisposable
+        {
+            private MainWindow _mw;
+            public FileLoadUiFreezeContext(MainWindow mw, string state)
+            {
+                _mw = mw;
+                _mw.packetsListBox.SelectedIndex = -1;
+                _mw.packetsListBox.DataContext = null;
+                _mw.packetsListBox.IsEnabled = false;
+                _mw.packetTextBox.Text = "";
+                _mw.loadingStatusLabel.Content = state;
+                _mw.loadingStatusLabel.Visibility = Visibility.Visible;
+                _mw.disablerBlock.Visibility = Visibility.Hidden;
+                _mw.CenterPanelsArea.IsEnabled = false;
+                _mw.MainToolBarTray.IsEnabled = false;
+                _mw._overrides = new();
+            }
+
+            public void Dispose()
+            {
+                _mw.packetsListBox.IsEnabled = true;
+                _mw.CenterPanelsArea.IsEnabled = true;
+                _mw.MainToolBarTray.IsEnabled = true;
+                _mw.loadingStatusLabel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+
         private string _wsDir { get; set; }
         string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
         TSharkInterop op => new TSharkInterop(TsharkPath);
 
         private MemoryPcapng _memoryPcapng;
+
+        private Dictionary<string, string> _templates;
 
         public MainWindow()
         {
@@ -48,6 +78,58 @@ namespace PacketStudioLight
             }
 
             _wsDir = Properties.Settings.Default.WiresharkDirectory.Trim('"', ' ');
+
+            LoadPacketTemplates();
+        }
+
+        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            // RemoveToolBarsOverflows
+            void ToolBar_Loaded(ToolBar toolBar)
+            {
+                var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
+                if (overflowGrid != null)
+                {
+                    overflowGrid.Visibility = Visibility.Collapsed;
+                }
+                var mainPanelBorder = toolBar.Template.FindName("MainPanelBorder", toolBar) as FrameworkElement;
+                if (mainPanelBorder != null)
+                {
+                    mainPanelBorder.Margin = new Thickness();
+                }
+            }
+
+            foreach (ToolBar toolBar in MainToolBarTray.ToolBars)
+            {
+                foreach (object toolBarItem in toolBar.Items)
+                {
+                    ToolBar.SetOverflowMode(toolBarItem as DependencyObject, OverflowMode.Never);
+                }
+                ToolBar_Loaded(toolBar);
+            }
+        }
+
+        public void LoadPacketTemplates()
+        {
+            _templates = PacketsGenerator.GetTemplateHints();
+            foreach (string templatesKey in _templates.Keys)
+            {
+                MenuItem mi = new MenuItem()
+                {
+                    Header = templatesKey,
+                };
+                mi.Click += InsertTemplateClicked;
+                InsertTemplatesMenuItem.Items.Add(mi);
+            }
+        }
+
+        private void InsertTemplateClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                string template = _templates[mi.Header as string];
+                packetTextBox.Text = template + "\n" + packetTextBox.Text;
+            }
         }
 
         private class PacketOverride
@@ -74,20 +156,11 @@ namespace PacketStudioLight
             }
 
             // User didn't cancel & actually chose a pcapng file. We can clear the old data now.
-            packetsListBox.SelectedIndex = -1;
-            packetsListBox.DataContext = null;
-            packetsListBox.IsEnabled = false;
-            packetTextBox.Text = "";
-            statusLabel.Content = "Loading...";
-            statusLabel.Visibility = Visibility.Visible;
-            _overrides = new();
-
-
-            _memoryPcapng = MemoryPcapng.ParsePcapng(capPath);
-            await UpdatePacketsList();
-
-            packetsListBox.IsEnabled = true;
-            statusLabel.Visibility = Visibility.Collapsed;
+            using (new FileLoadUiFreezeContext(this, "Loading..."))
+            {
+                _memoryPcapng = MemoryPcapng.ParsePcapng(capPath);
+                await UpdatePacketsList();
+            }
         }
 
         private async Task UpdatePacketsList()
@@ -104,8 +177,8 @@ namespace PacketStudioLight
             => this.Dispatcher.Invoke(() => HandlePacketsDraggedAndDroppedUI(sender, e));
         private async void HandlePacketsDraggedAndDroppedUI(object? sender, PacketMovedEventArgs e)
         {
-            statusLabel.Content = "Reordering...";
-            statusLabel.Visibility = Visibility.Visible;
+            loadingStatusLabel.Content = "Reordering...";
+            loadingStatusLabel.Visibility = Visibility.Visible;
 
             // Now let's move the Packet Blocks in the memory pcap
             ApplyOverrides();
@@ -116,7 +189,7 @@ namespace PacketStudioLight
 
             await UpdatePacketsList();
 
-            statusLabel.Visibility = Visibility.Hidden;
+            loadingStatusLabel.Visibility = Visibility.Hidden;
         }
 
         private void ApplyOverrides()
@@ -157,10 +230,16 @@ namespace PacketStudioLight
             _overrides.Clear();
         }
 
+        private int? _lastPacketEditorOffset;
         private void packetsList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (packetsListBox.SelectedIndex == -1)
+            {
+                _lastPacketEditorOffset = packetTextBox.CaretOffset;
                 return;
+            }
+
+
             IPacket pkt = _memoryPcapng.GetPacket(packetsListBox.SelectedIndex);
             byte[] data = pkt.Data;
             if (_overrides.TryGetValue(packetsListBox.SelectedIndex, out var pktOverride))
@@ -169,7 +248,32 @@ namespace PacketStudioLight
             }
             else
             {
-                packetTextBox.Text = BitConverter.ToString(data).Replace("-", String.Empty);
+                bool recoveredFromComment = false;
+                if (pkt is EnhancedPacketBlock epb)
+                {
+                    foreach (string comment in epb.Options.Comments)
+                    {
+                        if (PslcCommentsEncoder.TryDecode(comment, out string pktDescription))
+                        {
+                            // Found a PacketStudioLight packet desc, we'll use it for the text editor.
+                            packetTextBox.Text = pktDescription;
+                            recoveredFromComment = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!recoveredFromComment)
+                {
+                    // Just use the bytes from the EPB
+                    packetTextBox.Text = BitConverter.ToString(data).Replace("-", String.Empty);
+                }
+            }
+
+            if (_lastPacketEditorOffset != null)
+            {
+                packetTextBox.CaretOffset = _lastPacketEditorOffset.Value;
+                _lastPacketEditorOffset = null;
             }
         }
 
@@ -501,7 +605,7 @@ namespace PacketStudioLight
                 MessageBox.Show("Couldn't open destination file. Error:\n" + e);
                 return;
             }
-            
+
 
             ApplyOverrides();
             _memoryPcapng.WriteTo(fs);
@@ -515,7 +619,36 @@ namespace PacketStudioLight
 
         private void CopyClicked(object sender, RoutedEventArgs e)
         {
-             new NotImplementedException();
+            packetTextBox.Copy();
+            SetStatus("Copied.", isError: false);
+        }
+
+        private void CopyCSharpClicked(object sender, RoutedEventArgs e)
+        {
+            packetTextBox.Copy();
+            var x = Clipboard.GetText() as string;
+
+            byte[] bArr;
+            try
+            {
+                bArr = Hextensions.GetBytesFromHex(x);
+            }
+            catch
+            {
+                SetStatus("Failed to parse selected text as hex.", isError: true);
+                return;
+            }
+
+            string final = "new byte[] { 0x" + string.Join(", 0x", bArr.Select(b => b.ToString("X2"))) + " }";
+            Clipboard.SetText(final);
+            SetStatus("Copied.", isError: false);
+        }
+
+        private void SetStatus(string status, bool isError)
+        {
+            statusBarStatusLabel.Text = status;
+            okStatusImage.Visibility = isError ? Visibility.Collapsed : Visibility.Visible;
+            errorStatusImage.Visibility = isError ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void CutClicked(object sender, RoutedEventArgs e)
@@ -549,28 +682,16 @@ namespace PacketStudioLight
 
         private async void NewFileClicked(object sender, RoutedEventArgs e)
         {
-            packetsListBox.SelectedIndex = -1;
-            packetsListBox.DataContext = null;
-            packetsListBox.IsEnabled = false;
-            packetTextBox.Text = "";
-            statusLabel.Content = "Creating...";
-            statusLabel.Visibility = Visibility.Visible;
-            _overrides = new();
+            using (new FileLoadUiFreezeContext(this, "Creating..."))
+            {
+                TempPacketsSaver saver = new TempPacketsSaver();
+                string tempFile = await Task.Run(() => saver.WritePacket(
+                    new TempPacketSaveData(new byte[] { 0x11, 0x22, 0x33 }, LinkLayerType.Ethernet)));
 
-            Stopwatch sw = Stopwatch.StartNew();
-            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 1");
-            TempPacketsSaver saver = new TempPacketsSaver();
-            string tempFile = await Task.Run(() => saver.WritePacket(
-                new TempPacketSaveData(new byte[] { 0x11, 0x22, 0x33 }, LinkLayerType.Ethernet)));
-            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 2");
-
-            _memoryPcapng = MemoryPcapng.ParsePcapng(tempFile);
-            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 3");
-            await UpdatePacketsList();
-            Debug.WriteLine($"{sw.ElapsedMilliseconds} Checkpoint 4");
-
-            packetsListBox.IsEnabled = true;
-            statusLabel.Visibility = Visibility.Collapsed;
+                _memoryPcapng = MemoryPcapng.ParsePcapng(tempFile);
+                await UpdatePacketsList();
+            }
         }
+
     }
 }

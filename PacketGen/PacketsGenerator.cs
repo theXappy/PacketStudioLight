@@ -26,6 +26,21 @@ namespace PacketGen
             }
         }
 
+        public static Dictionary<string, string> GetTemplateHints()
+        {
+            return new Dictionary<string, string>()
+            {
+                ["Raw"] =
+                    "@ Generate: Raw\n@ RAW_PAYLOAD = {\n aa bb cc dd\n@ }\n@ ENCAPSULATION_TYPE = Ethernet",
+                ["Ethernet"] =
+                    "@ Generate: IP\n@ ETH_PAYLOAD = {\n aa bb cc dd\n@ }\n@ ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff\n@ ETH_DEST_ADDR = aa:bb:cc:dd:ee:00\n@ ETH_NEXT_TYPE = IPv4",
+                ["IPv4"] =
+                    "@ Generate: Ethernet\n@ IP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ IP_SOURCE_ADDR = 127.0.0.1\n@ IP_DEST_ADDR = 127.0.0.2\n@ IP_NEXT_TYPE = UDP",
+                ["UDP"] =
+                    "@ Generate: UDP\n@ UDP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ UDP_SOURCE_PORT = 1337\n@ UDP_DEST_PORT = 7331"
+            };
+        }
+
         public static (Packet, LinkLayers) Generate(string type, Dictionary<string, string> variables)
         {
             string upperType = type.ToUpper();

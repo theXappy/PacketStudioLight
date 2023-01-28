@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Collections.Generic;
+using System.Xml.Linq;
 
-namespace PacketStudioLight
+namespace PacketStudioLight.Converters
 {
     //MyColorsConverter
     public class XElementToColorConverter : IValueConverter

@@ -27,6 +27,12 @@ namespace PacketGen
             while (nextLineIndx < lines.Length)
             {
                 string nextLine = lines[nextLineIndx].Trim();
+                if (String.IsNullOrWhiteSpace(nextLine))
+                {
+                    nextLineIndx++;
+                    continue;
+                }
+
                 if (!nextLine.StartsWith("@"))
                 {
                     if (aggregating)
