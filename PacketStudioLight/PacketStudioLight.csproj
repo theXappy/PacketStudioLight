@@ -13,6 +13,7 @@
 		<None Remove="icons8-lightweight-96.png" />
 		<None Remove="icons8-yarn-48.png" />
 		<None Remove="icons8-yarn-96.png" />
+		<None Remove="Images\add.png" />
 		<None Remove="Images\big_file.png" />
 		<None Remove="Images\big_file_star.png" />
 		<None Remove="Images\big_folder.png" />
@@ -27,12 +28,15 @@
 		<None Remove="Images\options.png" />
 		<None Remove="Images\paste.png" />
 		<None Remove="Images\quit.png" />
+		<None Remove="Images\remove.png" />
 		<None Remove="Images\settings.png" />
 		<None Remove="Images\shark.png" />
 		<None Remove="Images\shark_dir.png" />
+		<None Remove="Images\shark_wrench.png" />
 		<None Remove="Images\tiny_folder.png" />
 		<None Remove="Images\tiny_save.png" />
 		<None Remove="Images\tiny_save_as.png" />
+		<None Remove="Images\wrench.png" />
 		<None Remove="Images\x.png" />
 		<None Remove="MyHighlighting.xshd" />
 		<None Remove="MyHighlighting_00.xshd" />
@@ -49,12 +53,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Images\add.png" />
 		<Resource Include="Images\big_file.png" />
 		<Resource Include="Images\big_file_star.png" />
 		<Resource Include="Images\big_folder.png" />
 		<Resource Include="Images\error.png" />
 		<Resource Include="Images\new_file.png" />
 		<Resource Include="Images\ok.png" />
+		<Resource Include="Images\remove.png" />
 		<Resource Include="Images\settings.png" />
 		<Resource Include="Images\shark.png" />
 	</ItemGroup>
@@ -73,6 +79,7 @@
 		<Resource Include="Images\tiny_folder.png" />
 		<Resource Include="Images\tiny_save.png" />
 		<Resource Include="Images\tiny_save_as.png" />
+		<Resource Include="Images\wrench.png" />
 	</ItemGroup>
 
 	<ItemGroup>
