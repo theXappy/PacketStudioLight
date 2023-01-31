@@ -14,8 +14,6 @@
         <converters:XElementToPacketDescriptionConverter x:Key="MyConverterKey"/>
         <converters:InvertableBooleanToVisibilityConverter x:Key="InvBoolToVisibility"/>
 
-
-
         <HierarchicalDataTemplate x:Key="template" ItemsSource="{Binding Path=Elements}">
             <StackPanel Orientation="Horizontal" Width="{Binding Width, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeView}}}" >
                 <TextBlock Text="{Binding Converter={StaticResource MyConverterKey}}" Foreground="White"/>
@@ -29,67 +27,69 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel x:Name="TopBar">
-            <Menu DockPanel.Dock="Top" Background="{StaticResource ToolBarTrayBackground}" Padding="4">
+            <Menu x:Name="MainMenu" DockPanel.Dock="Top" Background="{StaticResource ToolBarTrayBackground}" Padding="4">
                 <!-- FILE MENU -->
-                <MenuItem Header="File" VerticalAlignment="Center" Padding="10,2">
-                    <MenuItem Header="Open" Click="OpenButtonClicked">
+                <MenuItem x:Name="FileMenuItem" Header="_File" VerticalAlignment="Center" Padding="10,2">
+                    <MenuItem Header="_Open" Click="OpenButtonClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\tiny_folder.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Save" Click="SaveClicked">
+                    <MenuItem Header="_Save" Click="SaveClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\tiny_save.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator Background="{DynamicResource ToolBarHorizontalBorder}"/>
-                    <MenuItem Header="Settings" Click="SettingsButtonClicked">
+                    <MenuItem Header="Se_ttings" Click="SettingsButtonClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\settings.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator Background="{DynamicResource ToolBarHorizontalBorder}"/>
-                    <MenuItem Header="Exit" Click="ExitButtonClicked">
+                    <MenuItem Header="E_xit" Click="ExitButtonClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\quit.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
                 <!-- EDIT MENU -->
-                <MenuItem Padding="10,2" Header="Edit">
-                    <MenuItem Header="Cut" Click="CutClicked">
+                <MenuItem Padding="10,2" Header="_Edit">
+                    <MenuItem Header="Cu_t" Click="CutClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\cut.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Copy" Click="CopyClicked">
+                    <MenuItem Header="_Copy" Click="CopyClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\copy.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Copy Special...">
+                    <MenuItem Header="Copy _Special...">
                         <MenuItem Header="Copy with C# Syntax" Click="CopyCSharpClicked">
                             <MenuItem.Icon>
                                 <Image Source="Images\copy.png"/>
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="Paste" Click="PasteClicked">
+                    <MenuItem Header="_Paste" Click="PasteClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\paste.png"/>
                         </MenuItem.Icon>
                     </MenuItem>
                     <Separator Background="{DynamicResource ToolBarHorizontalBorder}"/>
-                    <MenuItem x:Name="InsertTemplatesMenuItem" Header="Insert Packet Template"/>
+                    <MenuItem x:Name="InsertTemplatesMenuItem" Header="_Insert Packet Template"/>
                 </MenuItem>
                 <!-- VIEW MENU -->
-                <MenuItem Padding="10,2" Header="View">
-                    <MenuItem Header="De-emphasis 0x00 in Hex Editor" IsCheckable="False" Click="ChangeHexEditorZeroesEmphasis"/>
+                <MenuItem Padding="10,2" Header="_View">
+                    <MenuItem Header="_De-emphasis 0x00 in Hex Editor" IsCheckable="False" Click="ChangeHexEditorZeroesEmphasis"/>
                 </MenuItem>
             </Menu>
             <Grid>
-                <ToolBarTray x:Name="MainToolBarTray" Orientation="Horizontal" Height="34" IsEnabled="False">
-                    <ToolBar x:Name="FileToolbar" IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
+                <!-- File ToolBar -->
+                <ToolBarTray x:Name="MainToolBarTray" Orientation="Horizontal" Height="34" IsEnabled="False" d:IsEnabled="True">
+                    <ToolBar x:Name="FileToolbar" BandIndex="0"
+                             IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewFileClicked">
                             <Image Source="/Images/new_file.png" Height="14"/>
                         </Button>
@@ -103,7 +103,9 @@
                             <Image Source="/Images/tiny_save_as.png" Height="14"/>
                         </Button>
                     </ToolBar>
-                    <ToolBar x:Name="EditToolbar" IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
+                    <!-- Edit ToolBar -->
+                    <ToolBar x:Name="EditToolbar" BandIndex="1"
+                             IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="PasteClicked">
                             <Image Source="/Images/paste.png" Height="16"/>
                         </Button>
@@ -114,7 +116,25 @@
                             <Image Source="/Images/cut.png" Height="16"/>
                         </Button>
                     </ToolBar>
-                    <ToolBar x:Name="SpecialOpsToolbar" IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
+                    <!-- Packets ToolBar -->
+                    <ToolBar x:Name="packetsToolbar" BandIndex="2"
+                             IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewPacketClicked">
+                            <DockPanel>
+                                <Image Source="/Images/add.png" Height="16"/>
+                                <TextBlock Margin="5,0">New Packet</TextBlock>
+                            </DockPanel>
+                        </Button>
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="DeletePacketClicked">
+                            <DockPanel>
+                                <Image Source="/Images/remove.png" Height="16"/>
+                                <TextBlock Margin="5,0">Delete Packet</TextBlock>
+                            </DockPanel>
+                        </Button>
+                    </ToolBar>
+                    <!-- Special Operations ToolBar -->
+                    <ToolBar x:Name="SpecialOpsToolbar" BandIndex="3"
+                             IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="AddLayersCommentsButtonClicked"
                             ToolTip="Add comments before every recognizable protocol in the hex editor."
                             >
@@ -131,28 +151,32 @@
                             </DockPanel>
                         </Button>
                     </ToolBar>
-                    <ToolBar x:Name="WiresharkToolbar">
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked">
-                            <Image Source="/Images/shark_dir.png" Height="16"/>
-                        </Button>
+                    <!-- Wireshark ToolBar -->
+                    <ToolBar x:Name="WiresharkToolbar" BandIndex="4"
+                             IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="ExportToWiresharkButtonClicked">
                             <DockPanel>
                                 <Image Source="/Images/shark.png" Height="16" />
                                 <TextBlock Margin="6,0,4,0">Export To Wireshark</TextBlock>
                             </DockPanel>
                         </Button>
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked">
+                            <Image Source="/Images/wrench.png" Height="16"/>
+                        </Button>
                     </ToolBar>
                 </ToolBarTray>
                 <DockPanel Background="#88000000" 
                            Visibility="{Binding IsEnabled, 
-                    ElementName=MainToolBarTray, 
-                    Converter={StaticResource InvBoolToVisibility}, 
-                    ConverterParameter=Inverted}"/>
+                                            ElementName=MainToolBarTray, 
+                                            Converter={StaticResource InvBoolToVisibility}, 
+                                            ConverterParameter=Inverted}"
+                           d:Visibility="{x:Static Visibility.Collapsed}"/>
             </Grid>
         </DockPanel>
         <Grid x:Name="CenterGrid" Grid.Row="1">
             <Grid x:Name="CenterPanelsArea" Background="{DynamicResource AREghZyBrush.Primary.1.Background.Static}"
-                  IsEnabled="False">
+                  IsEnabled="False"
+                  d:IsEnabled="True">
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -274,10 +298,10 @@
         <DockPanel x:Name="StatusBar" Grid.Row="2" Background="DodgerBlue" Height="26">
             <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="6,0,4,0">Status:</TextBlock>
             <Grid x:Name="statusImageGrid">
-                <Image x:Name="okStatusImage" Height="14" Source="Images/ok.png" Visibility="Collapsed" />
-                <Image x:Name="errorStatusImage" Height="14" Source="Images/error.png" Visibility="Collapsed"/>
+                <Image x:Name="okStatusImage" Height="14" Source="Images/ok.png" Visibility="Collapsed" Margin="0,0,4,0" />
+                <Image x:Name="errorStatusImage" Height="14" Source="Images/error.png" Visibility="Collapsed" Margin="0,0,4,0"/>
             </Grid>
-            <TextBlock x:Name="statusBarStatusLabel" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="4,0">Idle</TextBlock>
+            <TextBlock x:Name="statusBarStatusLabel" DockPanel.Dock="Left" VerticalAlignment="Center" >Idle</TextBlock>
             <TextBlock x:Name="packetsCountLabel" DockPanel.Dock="Right" MinWidth="40" VerticalAlignment="Center">0</TextBlock>
             <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Padding="10,0" VerticalAlignment="Center">Packets:</TextBlock>
         </DockPanel>
