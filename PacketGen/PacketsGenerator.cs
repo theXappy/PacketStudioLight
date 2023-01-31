@@ -2,6 +2,7 @@
 using PacketDotNet.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
@@ -33,11 +34,13 @@ namespace PacketGen
                 ["Raw"] =
                     "@ Generate: Raw\n@ RAW_PAYLOAD = {\n aa bb cc dd\n@ }\n@ ENCAPSULATION_TYPE = Ethernet",
                 ["Ethernet"] =
-                    "@ Generate: IP\n@ ETH_PAYLOAD = {\n aa bb cc dd\n@ }\n@ ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff\n@ ETH_DEST_ADDR = aa:bb:cc:dd:ee:00\n@ ETH_NEXT_TYPE = IPv4",
-                ["IPv4"] =
-                    "@ Generate: Ethernet\n@ IP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ IP_SOURCE_ADDR = 127.0.0.1\n@ IP_DEST_ADDR = 127.0.0.2\n@ IP_NEXT_TYPE = UDP",
+                    "@ Generate: Ethernet\n@ ETH_PAYLOAD = {\n aa bb cc dd\n@ }\n@ ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff\n@ ETH_DEST_ADDR = aa:bb:cc:dd:ee:00\n@ ETH_NEXT_TYPE = IPv4",
+                ["IP"] =
+                    "@ Generate: IP\n@ IP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ IP_SOURCE_ADDR = 127.0.0.1\n@ IP_DEST_ADDR = 127.0.0.2\n@ IP_NEXT_TYPE = UDP",
                 ["UDP"] =
-                    "@ Generate: UDP\n@ UDP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ UDP_SOURCE_PORT = 1337\n@ UDP_DEST_PORT = 7331"
+                    "@ Generate: UDP\n@ UDP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ UDP_SOURCE_PORT = 1337\n@ UDP_DEST_PORT = 7331",
+                ["SCTP"] =
+                    "@ Generate: SCTP\n@ SCTP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ SCTP_CHECKSUM_ALGO = Crc32c\n@ SCTP_CHECKSUM = 1337"
             };
         }
 
@@ -59,7 +62,7 @@ namespace PacketGen
         {
             // UDP_PAYLOAD = {
             // aa bb cc dd
-            // // }
+            // }
             // UDP_SOURCE_PORT = 1337
             // UDP_DEST_PORT = 7331
 
@@ -83,6 +86,9 @@ namespace PacketGen
 
             return (ip, firstLayer);
         }
+
+        public static (Packet, LinkLayers) GenerateSctp(Dictionary<string, string> variables) =>
+            SctpPacketGenerator.GenerateSctp(variables);
 
         public static (Packet, LinkLayers) GenerateIpv4(Dictionary<string, string> variables) => GenerateIp(variables);
         public static (Packet, LinkLayers) GenerateIp(Dictionary<string, string> variables)
@@ -108,7 +114,9 @@ namespace PacketGen
 
             ProtocolType IP_NEXT_TYPE = 0;
             if (variables.TryGetValue(nameof(IP_NEXT_TYPE), out string ethType))
-                Enum.TryParse(ethType, out IP_NEXT_TYPE);
+                Enum.TryParse(ethType, true, out IP_NEXT_TYPE);
+            if ("SCTP".Equals(ethType, StringComparison.CurrentCultureIgnoreCase))
+                IP_NEXT_TYPE = (ProtocolType)132;
 
 
             IPv4Packet ip = new IPv4Packet(IP_SOURCE_ADDR, IP_DEST_ADDR);
@@ -181,16 +189,16 @@ namespace PacketGen
                     throw new Exception($"Can't parse link layer '{ENCAPSULATION_TYPE}'");
             }
 
-            RawPacket raw = new RawPacket(RAW_PAYLOAD);
+            GenericPacket generic = new GenericPacket(RAW_PAYLOAD);
 
-            return (raw, linkLayer);
+            return (generic, linkLayer);
         }
 
     }
 
-    public class RawPacket : Packet
+    public class GenericPacket : Packet
     {
-        public RawPacket(byte[] data)
+        public GenericPacket(byte[] data)
         {
             this.Header = new ByteArraySegment(Array.Empty<byte>());
             this.PayloadData = data;
