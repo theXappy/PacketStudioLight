@@ -653,7 +653,7 @@ namespace PacketStudioLight
             byte[] bArr;
             try
             {
-                bArr = Hextensions.GetBytesFromHex(x);
+                bArr = Hextensions.DecodeHex(x);
             }
             catch
             {

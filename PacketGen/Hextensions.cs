@@ -8,9 +8,10 @@ namespace PacketGen
 {
     public static class Hextensions
     {
-        public static string GetHex(this byte[] data) => BitConverter.ToString(data).Replace("-", String.Empty);
+        public static string ToHex(this byte[] data) => BitConverter.ToString(data).Replace("-", String.Empty);
+        public static string ToHex(this IEnumerable<byte> data) => ToHex(data.ToArray());
 
-        public static byte[] GetBytesFromHex(string hex)
+        public static byte[] DecodeHex(this string hex)
         {
             hex = hex.Replace(" ", string.Empty);
             hex = hex.Replace("\t", string.Empty);

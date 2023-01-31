@@ -85,38 +85,66 @@ namespace PacketGen
             // }
             // SCTP_CHECKSUM_ALGO = Crc32c
             // SCTP_CHECKSUM = 1337
-            byte[] SCTP_PAYLOAD = new byte[0];
-            if (variables.TryGetValue(nameof(SCTP_PAYLOAD), out string payloadHex))
-                SCTP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
 
 
             // Hardcoded SCTP packet hex
-            string sctpHex = "a70908027ba3afec000000000003001b0a3e11320000000200000000000000000000";
+            string sctpHex = "a70908027ba3afec00000000";
+            string dataChunkHeader = "0003001b0a3e11320000000200000000000000000000";
 
-            // Convert payload to hex string
-            string newPayload = BitConverter.ToString(SCTP_PAYLOAD).Replace("-", "");
+            List<string> dataChunks = new List<string>();
 
-            // Calculate new length of data chunk (length of new payload + length of rest of data chunk)
-            int newLength = newPayload.Length / 2 + 16;
-
-            // Convert new length to hex string
-            string newLengthHex = newLength.ToString("X");
-
-            // Pad new length hex with leading zeros if necessary
-            while (newLengthHex.Length < 4)
+            int j = 1;
+            while (true)
             {
-                newLengthHex = "0" + newLengthHex;
-            }
 
-            // Append 0x00 to payload to round it to the nearest multiple of 8
-            while (newPayload.Length / 2 % 4 != 0)
-            {
-                newPayload += "00";
+                byte[] SCTP_PAYLOAD = new byte[0];
+                if (!variables.TryGetValue(nameof(SCTP_PAYLOAD) + $"_{j}", out string payloadHex))
+                {
+                    // No more chunks!
+                    break;
+                }
+
+                // Going through byte[] and back to "shake some trees" early - if the data isn't parseable hex we quite.
+                SCTP_PAYLOAD = Hextensions.DecodeHex(payloadHex);
+                string newPayload = Hextensions.ToHex(SCTP_PAYLOAD);
+
+                uint nextType = 0;
+                if (variables.TryGetValue($"SCTP_NEXT_TYPE_{j}", out string nextTypeStr))
+                {
+                    uint.TryParse(nextTypeStr, out nextType);
+                }
+
+                // Calculate new length of data chunk (length of new payload + length of rest of data chunk)
+                int newLength = newPayload.Length / 2 + 16;
+
+                // Convert new length to hex string
+                string newLengthHex = newLength.ToString("X");
+
+                // Pad new length hex with leading zeros if necessary
+                while (newLengthHex.Length < 4)
+                {
+                    newLengthHex = "0" + newLengthHex;
+                }
+
+                // Append 0x00 to payload to round it to the nearest multiple of 4
+                while (newPayload.Length / 2 % 4 != 0)
+                {
+                    newPayload += "00";
+                }
+
+                var finalizedDataChunk = dataChunkHeader.Substring(0, 4) +
+                                         newLengthHex + 
+                                         dataChunkHeader.Substring(8, 16) + 
+                                         BitConverter.GetBytes(nextType).Reverse().ToHex() +
+                                         newPayload;
+                dataChunks.Add(finalizedDataChunk);
+
+                j++;
             }
 
             // Replace old payload and length in SCTP packet hex
-            sctpHex = sctpHex.Substring(0, 28) + newLengthHex + sctpHex.Substring(44, 24) + newPayload;
-            byte[] sctpBytes = Hextensions.GetBytesFromHex(sctpHex);
+            sctpHex += string.Join(string.Empty, dataChunks);
+            byte[] sctpBytes = Hextensions.DecodeHex(sctpHex);
 
             // Zero the Checksum field (just in case)
             for (int i = 0; i < 4; i++)
@@ -140,7 +168,7 @@ namespace PacketGen
             {
                 // Checksum was explicitly overridden by the user.
             }
-            else 
+            else
             {
                 // Checksum not specified by user, we need to calculate base on
                 // chosen/default algorithm

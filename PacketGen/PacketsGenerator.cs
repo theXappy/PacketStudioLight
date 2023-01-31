@@ -40,7 +40,7 @@ namespace PacketGen
                 ["UDP"] =
                     "@ Generate: UDP\n@ UDP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ UDP_SOURCE_PORT = 1337\n@ UDP_DEST_PORT = 7331",
                 ["SCTP"] =
-                    "@ Generate: SCTP\n@ SCTP_PAYLOAD = {\n aa bb cc dd\n@ }\n@ SCTP_CHECKSUM_ALGO = Crc32c\n@ SCTP_CHECKSUM = 1337"
+                    "@ Generate: SCTP\n@ SCTP_PAYLOAD_1 = {\n aa bb cc dd\n@ }\n\r\n@ SCTP_NEXT_TYPE_1 = 32\n@ SCTP_PAYLOAD_2 = {\n ee ff\n@ }\n@ SCTP_CHECKSUM_ALGO = Crc32c\n@ SCTP_CHECKSUM = 1337"
             };
         }
 
@@ -68,7 +68,7 @@ namespace PacketGen
 
             byte[] UDP_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(UDP_PAYLOAD), out string payloadHex))
-                UDP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
+                UDP_PAYLOAD = Hextensions.DecodeHex(payloadHex);
 
             ushort UDP_SOURCE_PORT = 1;
             if (variables.TryGetValue(nameof(UDP_SOURCE_PORT), out string srcPort))
@@ -102,7 +102,7 @@ namespace PacketGen
 
             byte[] IP_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(IP_PAYLOAD), out string payloadHex))
-                IP_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
+                IP_PAYLOAD = Hextensions.DecodeHex(payloadHex);
 
             IPAddress IP_SOURCE_ADDR = IPAddress.Parse("127.0.0.1");
             if (variables.TryGetValue(nameof(IP_SOURCE_ADDR), out string srcIp))
@@ -140,7 +140,7 @@ namespace PacketGen
 
             byte[] ETH_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(ETH_PAYLOAD), out string payloadHex))
-                ETH_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
+                ETH_PAYLOAD = Hextensions.DecodeHex(payloadHex);
 
             PhysicalAddress ETH_SOURCE_ADDR = PhysicalAddress.Parse("00:00:00:00:00:00");
             if (variables.TryGetValue(nameof(ETH_SOURCE_ADDR), out string srcIp))
@@ -169,7 +169,7 @@ namespace PacketGen
 
             byte[] RAW_PAYLOAD = new byte[0];
             if (variables.TryGetValue(nameof(RAW_PAYLOAD), out string payloadHex))
-                RAW_PAYLOAD = Hextensions.GetBytesFromHex(payloadHex);
+                RAW_PAYLOAD = Hextensions.DecodeHex(payloadHex);
 
 
             LinkLayers linkLayer;

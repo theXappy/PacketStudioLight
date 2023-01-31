@@ -56,7 +56,7 @@ namespace PacketGen
                                 var encodingName = match.Groups[2].ToString();
                                 var encoding = Encoding.GetEncoding(encodingName);
                                 byte[] encodedString = encoding.GetBytes(toEncode);
-                                sb.Append(encodedString.GetHex());
+                                sb.Append(encodedString.ToHex());
                             }
                         }
                         else
