@@ -711,6 +711,9 @@ namespace PacketStudioLight
 
                 _memoryPcapng = MemoryPcapng.ParsePcapng(tempFile);
                 await UpdatePacketsListAsync();
+
+                // Select first packet
+                packetsListBox.SelectedIndex = 0;
             }
         }
 
