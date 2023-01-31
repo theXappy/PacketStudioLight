@@ -30,6 +30,11 @@
             <Menu x:Name="MainMenu" DockPanel.Dock="Top" Background="{StaticResource ToolBarTrayBackground}" Padding="4">
                 <!-- FILE MENU -->
                 <MenuItem x:Name="FileMenuItem" Header="_File" VerticalAlignment="Center" Padding="10,2">
+                    <MenuItem Header="_New File" Click="NewFileClicked">
+                        <MenuItem.Icon>
+                            <Image Source="Images\new_file.png"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <MenuItem Header="_Open" Click="OpenButtonClicked">
                         <MenuItem.Icon>
                             <Image Source="Images\tiny_folder.png"/>
