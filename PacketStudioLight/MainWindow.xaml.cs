@@ -21,6 +21,8 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using Haukcode.PcapngUtils.PcapNG.CommonTypes;
 using Haukcode.PcapngUtils.PcapNG.OptionTypes;
+using System.Text.RegularExpressions;
+using System.Windows.Media;
 
 namespace PacketStudioLight
 {
@@ -196,6 +198,9 @@ namespace PacketStudioLight
             var newDataContext = new PacketsListBoxViewModel(new ObservableCollection<string>(results));
             newDataContext.Updated += HandlePacketsDraggedAndDropped;
             packetsListBox.DataContext = newDataContext;
+
+            // Packets Counter in status bar
+            packetsCountLabel.Text = results.Length.ToString();
         }
 
         private void HandlePacketsDraggedAndDropped(object? sender, PacketMovedEventArgs e)
@@ -342,8 +347,8 @@ namespace PacketStudioLight
                     string[] cleanedLines = lines
                         .Where(line => !line.TrimStart().StartsWith("//"))
                         .Select(line => line.Replace(" ", string.Empty)
-                                            .Replace("\r", string.Empty)
-                                            .Replace("\n", string.Empty))
+                            .Replace("\r", string.Empty)
+                            .Replace("\n", string.Empty))
                         .ToArray();
                     string joined = String.Join(String.Empty, cleanedLines);
 
@@ -373,13 +378,16 @@ namespace PacketStudioLight
                 }
 
                 // No errors in hex
+                SetCompiledHex(data);
+
 
 
                 IPacket pkt = _memoryPcapng.GetPacket(pktIndex);
                 LinkLayerType llt = LinkLayerType.Ethernet;
                 if (pkt is EnhancedPacketBlock)
                 {
-                    llt = (LinkLayerType)_memoryPcapng.Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
+                    llt = (LinkLayerType)_memoryPcapng
+                        .Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
                 }
 
                 if (pktOverride?.LinkLayer != null)
@@ -402,7 +410,8 @@ namespace PacketStudioLight
                     pkt = _memoryPcapng.GetPacket(pktIndex);
                     data = pkt.Data;
                 }
-;
+
+                ;
 
                 // Update tree
                 var tsharkTask = op.GetPdmlAsync(new TempPacketSaveData(data, llt)).ContinueWith(t =>
@@ -424,7 +433,27 @@ namespace PacketStudioLight
                     })));
                 }
             }
-            catch { }
+            catch
+            {
+                MarkStaleCompiledHex();
+            }
+        }
+
+        private void MarkStaleCompiledHex()
+        {
+            compiledHexBox.Foreground = Brushes.Gray;
+        }
+
+        private void SetCompiledHex(byte[] data)
+        {
+            string SpliceText(string text, int lineLength)
+            {
+                return Regex.Replace(text, "(.{" + lineLength + "})", "$1" + Environment.NewLine);
+            }
+
+
+            compiledHexBox.Foreground = Brushes.White;
+            compiledHexBox.Text = SpliceText(data.ToHex(), 32);
         }
 
         public static byte[] GetBytesFromHex(string hex)

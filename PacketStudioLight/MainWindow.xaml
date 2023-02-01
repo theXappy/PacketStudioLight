@@ -125,16 +125,10 @@
                     <ToolBar x:Name="packetsToolbar" BandIndex="2"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewPacketClicked">
-                            <DockPanel>
-                                <Image Source="/Images/add.png" Height="16"/>
-                                <TextBlock Margin="5,0">New Packet</TextBlock>
-                            </DockPanel>
+                            <Image Source="/Images/add.png" Height="16"/>
                         </Button>
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="DeletePacketClicked">
-                            <DockPanel>
-                                <Image Source="/Images/remove.png" Height="16"/>
-                                <TextBlock Margin="5,0">Delete Packet</TextBlock>
-                            </DockPanel>
+                            <Image Source="/Images/remove.png" Height="16"/>
                         </Button>
                     </ToolBar>
                     <!-- Special Operations ToolBar -->
@@ -143,17 +137,11 @@
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="AddLayersCommentsButtonClicked"
                             ToolTip="Add comments before every recognizable protocol in the hex editor."
                             >
-                            <DockPanel>
-                                <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
-                                <TextBlock Margin="5,0">Comment Layers</TextBlock>
-                            </DockPanel>
+                            <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
                         </Button>
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NormalizeHexClicked"
                             ToolTip="Normalize the text in the hex editor. Result will be a continuous hex string without comments or new lines.">
-                            <DockPanel>
-                                <Image Source="/Images/hammer.png" Height="16"/>
-                                <TextBlock Margin="5,0">Normalize Hex</TextBlock>
-                            </DockPanel>
+                            <Image Source="/Images/hammer.png" Height="16"/>
                         </Button>
                     </ToolBar>
                     <!-- Wireshark ToolBar -->
@@ -162,7 +150,7 @@
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="ExportToWiresharkButtonClicked">
                             <DockPanel>
                                 <Image Source="/Images/shark.png" Height="16" />
-                                <TextBlock Margin="6,0,4,0">Export To Wireshark</TextBlock>
+                                <TextBlock Margin="6,0,4,0">To Wireshark</TextBlock>
                             </DockPanel>
                         </Button>
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked">
@@ -184,9 +172,11 @@
                   d:IsEnabled="True">
                 <!-- Grid parts -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="3*"/>
                     <ColumnDefinition Width="auto"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="3*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="2*"/>
@@ -194,7 +184,7 @@
                     <RowDefinition Height="3*"/>
                 </Grid.RowDefinitions>
                 <!-- Grid parts -->
-                <DockPanel x:Name="PacketsListPanel" Grid.Row="0" Grid.ColumnSpan="3">
+                <DockPanel x:Name="PacketsListPanel" Grid.Row="0" Grid.ColumnSpan="5">
                     <Label DockPanel.Dock="Top" >Packets List
                     </Label>
                     <Grid Margin="5,0">
@@ -214,7 +204,7 @@
                     </Grid>
                 </DockPanel>
                 <!-- Horizontal Splitter -->
-                <GridSplitter Grid.Row="1" Grid.ColumnSpan="3" Height="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,0"/>
+                <GridSplitter Grid.Row="1" Grid.ColumnSpan="5" Height="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="5,0"/>
                 <!-- Hex Editor Dock -->
                 <DockPanel x:Name="HexEditorPanel" Grid.Row="2">
                     <DockPanel DockPanel.Dock="Top" LastChildFill="False">
@@ -223,21 +213,7 @@
                             <Label.Content>🛈</Label.Content>
                             <Label.ToolTip>
                                 <ToolTip Placement="Right">
-                                    <TextBlock FontFamily="Consolas">
-                                    @ Generate: Ethernet <LineBreak/>
-                                    @ ETH_PAYLOAD = { <LineBreak/>
-                                    450000309F354000 <LineBreak/>
-                                    800600000A64660C <LineBreak/>
-                                    AC1CC30170801167 <LineBreak/>
-                                    5367603E00000000 <LineBreak/>
-                                    "Some Text".Encode("ASCII") <LineBreak/>
-                                    7002FAF0DFB00000 <LineBreak/>
-                                    020405B401010402 <LineBreak/>
-                                    @ } <LineBreak/>
-                                    @ ETH_SOURCE_ADDR = aa:bb:cc:dd:ee:ff <LineBreak/>
-                                    @ ETH_DEST_ADDR = aa:bb:cc:dd:ee:00 <LineBreak/>
-                                    @ ETH_NEXT_TYPE = IPv4
-                                    </TextBlock>
+                                    <TextBlock FontFamily="Consolas">Special syntax available. Try "Edit" → "Insert Packet Template..."</TextBlock>
                                 </ToolTip>
                             </Label.ToolTip>
                         </Label>
@@ -245,10 +221,10 @@
                     <avalonEdit:TextEditor
                             xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
                             x:Name="packetTextBox"
-                            FontFamily="Consolas"
                             ShowLineNumbers="True"
                             WordWrap="True"
-                            FontSize="14pt"
+                            FontFamily="Consolas"
+                            FontSize="12pt"
                             Margin="5,0,0,5"
                             TextChanged="packetTextBox_TextChanged_Base" 
                             d:Text="00 11 22"
@@ -258,9 +234,24 @@
                             BorderThickness="1,1,1,1"/>
                 </DockPanel>
                 <!-- Vertical Splitter -->
-                <GridSplitter Grid.Row="2" Grid.Column="1" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Margin="0,2"/>
+                <GridSplitter Grid.Row="2" Grid.Column="1" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Margin="1,2"/>
                 <!-- Proto Tree Dock -->
-                <DockPanel x:Name="TreeViewPAnel" Grid.Row="2" Grid.Column="2">
+                <DockPanel x:Name="compiledHexPanel" Grid.Row="2" Grid.Column="2">
+                    <Label DockPanel.Dock="Top">Compiled Hex</Label>
+                    <TextBox x:Name="compiledHexBox" 
+                             Margin="0,0,5,5"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             FontFamily="Consolas"
+                             FontSize="12pt"
+                             Background="{DynamicResource ToolBarTrayBackground}"
+                             BorderBrush="{DynamicResource ToolBarHorizontalBorder}"
+                             />
+                </DockPanel>
+                <!-- Vertical Splitter -->
+                <GridSplitter Grid.Row="2" Grid.Column="3" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Margin="1,2"/>
+                <!-- Proto Tree Dock -->
+                <DockPanel x:Name="TreeViewPanel" Grid.Row="2" Grid.Column="4">
                     <Label DockPanel.Dock="Top">Protocol Tree</Label>
                     <local:StretchingTreeView x:Name="treeView"
                               Margin="0,0,5,5"

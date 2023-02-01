@@ -37,7 +37,7 @@ namespace PacketStudioLight.Converters
             {
                 {"normal", Brushes.Transparent },
                 {"error",  new SolidColorBrush(Color.FromRgb(255, 92, 92)) },
-                {"warn", Brushes.Yellow },
+                {"warn", new SolidColorBrush(Color.FromRgb(210, 206, 71)) },
                 {"layer",  new SolidColorBrush(Color.FromRgb(70, 70, 70)) }
             };
             stateToBrushes[ITEM_STATE_SELECTED] = new Dictionary<string, Brush>
@@ -51,7 +51,7 @@ namespace PacketStudioLight.Converters
             {
                 {"normal", new SolidColorBrush(Color.FromRgb(65, 121, 177)) },
                 {"error",  new SolidColorBrush(Color.FromRgb(217, 78, 78)) },
-                {"warn",  new SolidColorBrush(Color.FromRgb(210, 206, 71)) },
+                {"warn",  new SolidColorBrush(Color.FromRgb(200, 190, 71)) },
                 {"layer",  new SolidColorBrush(Color.FromRgb(55, 55, 55)) },
             };
 
