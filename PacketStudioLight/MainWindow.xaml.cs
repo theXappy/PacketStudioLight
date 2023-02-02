@@ -22,6 +22,7 @@ using System.Windows.Controls;
 using Haukcode.PcapngUtils.PcapNG.CommonTypes;
 using Haukcode.PcapngUtils.PcapNG.OptionTypes;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Media;
 
 namespace PacketStudioLight
@@ -307,9 +308,12 @@ namespace PacketStudioLight
             }
         }
 
+        private AutoResetEvent _tsharkDataRefreshEvent = new AutoResetEvent(true);
+
         // This overload is here because that's the signature for the event in case of AvalonEdit
-        private void packetTextBox_TextChanged_Base(object sender, EventArgs e)
+        private async void packetTextBox_TextChanged_Base(object sender, EventArgs e)
         {
+            bool enteredRefreshEvent = false;
             try
             {
                 int pktIndex = packetsListBox.SelectedIndex;
@@ -394,10 +398,10 @@ namespace PacketStudioLight
                     llt = (LinkLayerType)pktOverride.LinkLayer.Value;
 
                 // BEWARE: LAZY CODE AHEAD
-                bool packetChanged = false;
+                bool overrideDetected = false;
                 if (!pkt.Data.SequenceEqual(data))
                 {
-                    packetChanged = true;
+                    overrideDetected = true;
                     pktOverride = new PacketOverride
                     {
                         Data = data,
@@ -411,31 +415,37 @@ namespace PacketStudioLight
                     data = pkt.Data;
                 }
 
-                ;
+                // Check if this event is geniun - from the user.
+                // If we can't grab the lock, that means we caused this event while handling another event.
+                // So in that case an update to the packets list/tree already JUST happened. We can quit here.
+                if (!_tsharkDataRefreshEvent.WaitOne(TimeSpan.FromMicroseconds(5)))
+                {
+                    return;
+                }
+
+                enteredRefreshEvent = true;
 
                 // Update tree
-                var tsharkTask = op.GetPdmlAsync(new TempPacketSaveData(data, llt)).ContinueWith(t =>
-                {
-                    XElement pdml = t.Result;
-                    this.Dispatcher.Invoke(() =>
-                    {
-                        XDocument doc = new XDocument(pdml);
-                        this.treeView.DataContext = doc;
-                        this.treeView.ItemsSource = doc.Root.Elements();
-                    });
-                });
-                if (packetChanged)
+                XElement pdml = await op.GetPdmlAsync(new TempPacketSaveData(data, llt));
+                XDocument doc = new XDocument(pdml);
+                treeView.DataContext = doc;
+                treeView.ItemsSource = doc.Root.Elements();
+
+                if (overrideDetected)
                 {
                     // Update packets list
-                    UpdatePacketsListAsync().ContinueWith((Action<Task>)(t => Dispatcher.Invoke(() =>
-                    {
-                        packetsListBox.SelectedIndex = pktIndex;
-                    })));
+                    await UpdatePacketsListAsync();
+                    packetsListBox.SelectedIndex = pktIndex;
                 }
             }
             catch
             {
                 MarkStaleCompiledHex();
+            }
+            finally
+            {
+                if (enteredRefreshEvent)
+                    _tsharkDataRefreshEvent.Set();
             }
         }
 
