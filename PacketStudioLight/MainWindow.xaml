@@ -95,39 +95,36 @@
                 <ToolBarTray x:Name="MainToolBarTray" Orientation="Horizontal" Height="34" IsEnabled="False" d:IsEnabled="True">
                     <ToolBar x:Name="FileToolbar" BandIndex="0"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewFileClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewFileClicked" ToolTip="New File">
                             <Image Source="/Images/new_file.png" Height="14"/>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="OpenButtonClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="OpenButtonClicked" ToolTip="Open">
                             <Image Source="/Images/tiny_folder.png" Height="14"/>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SaveClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SaveClicked" ToolTip="Save">
                             <Image Source="/Images/tiny_save.png" Height="14"/>
-                        </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SaveClicked">
-                            <Image Source="/Images/tiny_save_as.png" Height="14"/>
                         </Button>
                     </ToolBar>
                     <!-- Edit ToolBar -->
                     <ToolBar x:Name="EditToolbar" BandIndex="1"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="PasteClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="PasteClicked" ToolTip="Paste">
                             <Image Source="/Images/paste.png" Height="16"/>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CopyClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CopyClicked" ToolTip="Copy">
                             <Image Source="/Images/copy.png" Height="16"/>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CutClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="CutClicked" ToolTip="Cut">
                             <Image Source="/Images/cut.png" Height="16"/>
                         </Button>
                     </ToolBar>
                     <!-- Packets ToolBar -->
                     <ToolBar x:Name="packetsToolbar" BandIndex="2"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewPacketClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NewPacketClicked" ToolTip="Add Packet">
                             <Image Source="/Images/add.png" Height="16"/>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="DeletePacketClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="DeletePacketClicked" ToolTip="Delete Current Packet">
                             <Image Source="/Images/remove.png" Height="16"/>
                         </Button>
                     </ToolBar>
@@ -135,25 +132,25 @@
                     <ToolBar x:Name="SpecialOpsToolbar" BandIndex="3"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="AddLayersCommentsButtonClicked"
-                            ToolTip="Add comments before every recognizable protocol in the hex editor."
+                            ToolTip="Annotate Layers in Packet"
                             >
                             <Image Source="/Images/comment.png" Height="16" Margin="0,0,5,0"/>
                         </Button>
                         <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="NormalizeHexClicked"
-                            ToolTip="Normalize the text in the hex editor. Result will be a continuous hex string without comments or new lines.">
+                            ToolTip="Normalize text in hex editor">
                             <Image Source="/Images/hammer.png" Height="16"/>
                         </Button>
                     </ToolBar>
                     <!-- Wireshark ToolBar -->
                     <ToolBar x:Name="WiresharkToolbar" BandIndex="4"
                              IsEnabled="{Binding IsEnabled, ElementName=MainToolBarTray}">
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="ExportToWiresharkButtonClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="ExportToWiresharkButtonClicked" ToolTip="Export to Wireshark">
                             <DockPanel>
                                 <Image Source="/Images/shark.png" Height="16" />
                                 <TextBlock Margin="6,0,4,0">To Wireshark</TextBlock>
                             </DockPanel>
                         </Button>
-                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked">
+                        <Button Height="24" Margin="2,0" BorderBrush="Transparent" Click="SettingsButtonClicked" ToolTip="Settings">
                             <Image Source="/Images/wrench.png" Height="16"/>
                         </Button>
                     </ToolBar>
