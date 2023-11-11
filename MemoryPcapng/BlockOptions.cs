@@ -90,12 +90,14 @@ namespace MemoryPcapng
                 throw new ArgumentException("Output Memory<byte> too small.");
             }
 
+            bool addEndOfOptions = false;
             int offset = 0;
             foreach (var kvp in _opTypeToValue)
             {
                 if (kvp.Key == opt_endofopt)
                 {
                     // Skipping, this should be written last
+                    addEndOfOptions = true;
                     continue;
                 }
 
@@ -119,9 +121,12 @@ namespace MemoryPcapng
             }
 
             // End marker
-            BitConverter.GetBytes(opt_endofopt).CopyTo(output[offset..(offset + 2)]); // Type
-            offset += 2;
-            BitConverter.GetBytes((ushort)0x0000).CopyTo(output[offset..(offset + 2)]); // Length
+            if (addEndOfOptions)
+            {
+                BitConverter.GetBytes(opt_endofopt).CopyTo(output[offset..(offset + 2)]); // Type
+                offset += 2;
+                BitConverter.GetBytes((ushort)0x0000).CopyTo(output[offset..(offset + 2)]); // Length
+            }
         }
 
         public byte[] ToBytes()
