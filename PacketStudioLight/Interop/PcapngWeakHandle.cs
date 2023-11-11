@@ -1,5 +1,4 @@
 ﻿using Haukcode.PcapngUtils.PcapNG.BlockTypes;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
