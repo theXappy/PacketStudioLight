@@ -308,7 +308,6 @@ namespace PacketStudioLight
                 string[] lines = packetTextBox.Text.Split('\n');
 
                 byte[] data = null;
-                PacketOverride pktOverride = null;
                 if (lines.Length > 0 &&
                     lines[0].StartsWith("@") &&
                     lines[0].Contains("Generate: "))
