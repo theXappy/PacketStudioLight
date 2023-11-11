@@ -193,6 +193,8 @@
                                   dd:DragDrop.IsDropTarget="True"
                                   dd:DragDrop.DropHandler="{Binding}"
                                   Background="{DynamicResource ToolBarTrayBackground}"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                              />
                         <Label x:Name="loadingStatusLabel" Margin="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
                                         FontSize="45" Background="#44333333" Visibility="Collapsed">

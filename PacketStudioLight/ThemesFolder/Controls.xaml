@@ -1,4 +1,4 @@
-﻿<ResourceDictionary x:Class="REghZy.Themes.Controls" 
+<ResourceDictionary x:Class="REghZy.Themes.Controls" 
                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
                     xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2"
@@ -786,7 +786,11 @@
         </Setter>
     </Style>
 
-    <Style TargetType="{x:Type ScrollViewer}">
+    <!-- This fucks up virtualization in ListBox ?? -->
+    <!-- This fucks up virtualization in ListBox ?? -->
+    <!-- This fucks up virtualization in ListBox ?? -->
+
+    <!--<Style TargetType="{x:Type ScrollViewer}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="CanContentScroll" Value="False" />
@@ -810,7 +814,7 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-    </Style>
+    </Style>-->
 
     <Style x:Key="ScrollBarButton" TargetType="{x:Type RepeatButton}">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
