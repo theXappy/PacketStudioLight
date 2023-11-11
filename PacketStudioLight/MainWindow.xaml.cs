@@ -629,6 +629,12 @@ namespace PacketStudioLight
 
         private void SaveClicked(object sender, RoutedEventArgs e)
         {
+            if(_pcapng == null)
+            {
+                MessageBox.Show("Error: Nothing to save.", "Error");
+                return;
+            }
+
             SaveFileDialog sfd = new SaveFileDialog();
             sfd.Filter = "Pcapng File (*.pcapng)|*.pcapng";
             bool? res = sfd.ShowDialog();
