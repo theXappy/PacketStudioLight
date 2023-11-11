@@ -26,8 +26,7 @@ public class PacketDescriptionsList
         return Task.Run(() =>
         {
             Debug.WriteLine($"[{DateTime.Now}] TSharking...");
-            bool useImmediateFlushFlag = pcapng.PacketsCount < 50;
-            using TShark tshark = new TShark(@"C:\Program Files\Wireshark\tshark.exe", useImmediateFlushFlag);
+            using TShark tshark = new TShark(@"C:\Program Files\Wireshark\tshark.exe");
             Debug.WriteLine($"[{DateTime.Now}] Opened.");
             tshark.NewPacketLine += TsharkOnNewPacketLine;
             Debug.WriteLine($"[{DateTime.Now}] write to...");

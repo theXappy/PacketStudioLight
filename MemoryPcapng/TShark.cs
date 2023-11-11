@@ -19,7 +19,7 @@ public class TShark : IDisposable
 
     public event EventHandler<TSharkOutputEvent> NewPacketLine;
 
-    public TShark(string tsharkPath, bool immediateFlush = true)
+    public TShark(string tsharkPath)
     {
         _sbErr = new StringBuilder();
 
@@ -43,10 +43,9 @@ public class TShark : IDisposable
             // TODO: Close anon pipe?
         });
 
-        string args = $"-i \\\\.\\pipe\\{pipeName} " +
+        string args = $@"-i \\.\pipe\{pipeName} " +
+                      "-l" +
                       $" -T fields -e _ws.col.No. -e _ws.col.Time -e _ws.col.Source -e _ws.col.Destination -e _ws.col.Protocol -e _ws.col.Length -e _ws.col.Info -Eseparator=~ -t d";
-        if (immediateFlush)
-            args += "-l";
 
         var command = CliWrap.Cli.Wrap(tsharkPath)
             //.WithArguments("-T fields")
