@@ -14,7 +14,6 @@ using System.Xml;
 using PacketGen;
 using PacketDotNet;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Windows.Controls;
 using Haukcode.PcapngUtils.PcapNG.CommonTypes;
 using Haukcode.PcapngUtils.PcapNG.OptionTypes;
@@ -73,17 +72,9 @@ namespace PacketStudioLight
             }
         }
 
-        private class PacketOverride
-        {
-            public byte[] Data { get; set; }
-            public string OriginalText { get; set; }
-            public LinkLayers? LinkLayer { get; set; }
-        }
-
         private string _wsDir { get; set; }
-        string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
-        private TSharkInterop op => new TSharkInterop(TsharkPath);
+        private TSharkInterop op => new(TsharkPath);
 
         private Pcapng _pcapng;
         private PacketDescriptionsList _pdl;
