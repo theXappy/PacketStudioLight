@@ -214,20 +214,12 @@ namespace PacketStudioLight
                 pdl = new PacketDescriptionsList(list, Adder, Remover);
                 newDataContext = new PacketsListBoxViewModel(list);
                 newDataContext.Updated += HandlePacketsDraggedAndDropped;
+                packetsListBox.DataContext = newDataContext;
                 packetsCountLabel.DataContext = pdl.Descriptions;
             }
 
             totalPacketsCountLabel.Text = pcapng.PacketsCount.ToString();
-            packetsListBox.DataContext = null;
-            Console.WriteLine($"[{DateTime.Now}] Disabled processing...");
             await pdl.UpdateAsync(this.pcapng);
-            using (Dispatcher.DisableProcessing())
-            {
-                packetsListBox.DataContext = newDataContext;
-            }
-
-            Console.WriteLine($"[{DateTime.Now}] Re-enabled processing...");
-
 
             // TODO: Just bind that shit to the observable list's length...
             //packetsCountLabel.Text = pdl.Descriptions.Count.ToString();

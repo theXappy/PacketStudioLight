@@ -43,7 +43,8 @@ public class TShark : IDisposable
             // TODO: Close anon pipe?
         });
 
-        string args = $"-i \\\\.\\pipe\\{pipeName} ";
+        string args = $"-i \\\\.\\pipe\\{pipeName} " +
+                      $" -T fields -e _ws.col.No. -e _ws.col.Time -e _ws.col.Source -e _ws.col.Destination -e _ws.col.Protocol -e _ws.col.Length -e _ws.col.Info -Eseparator=~ -t d";
         if (immediateFlush)
             args += "-l";
 
@@ -58,11 +59,17 @@ public class TShark : IDisposable
         Pipe.WaitForConnection();
     }
 
-    private void HandleNewLine(string obj)
+    private void HandleNewLine(string tsharkLine)
     {
         lock (_packetIndexLock)
         {
-            NewPacketLine?.Invoke(this, new TSharkOutputEvent(_packetIndex, obj));
+            // Expecting: Frame Number, Time, Src, Dest, Protocol, Length, Info
+            string[] sub = tsharkLine.Split('~');
+            string newLine =
+                $"{sub[0],-10} {sub[1],-15} {sub[2],-18} {sub[3],-18} {sub[4],-8} {sub[5],-8} {sub[6]}";
+
+            
+            NewPacketLine?.Invoke(this, new TSharkOutputEvent(_packetIndex, newLine));
             _packetIndex++;
             _packetArrived.Set();
         }
