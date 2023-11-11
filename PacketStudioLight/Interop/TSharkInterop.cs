@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using CliWrap;
 using CliWrap.Buffered;
-using FastPcapng;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
