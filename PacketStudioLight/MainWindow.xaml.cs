@@ -533,16 +533,21 @@ namespace PacketStudioLight
                     foreach (var layer in layers)
                     {
                         string name = (layer as JProperty)?.Name;
-                        if (name.EndsWith("_raw") && name != "frame_raw")
+                        if (!name.EndsWith("_raw")) 
+                            continue;
+
+                        string layerName = name.Replace("_raw", String.Empty);
+                        if (layerName == "frame") 
+                            continue;
+                        if (layerName == "_ws.lua.fake") 
+                            continue;
+
+                        string? hex = ((layer.Values().First() as JValue).Value as string)?.ToUpper();
+                        int index = originalText.IndexOf(hex, StringComparison.CurrentCultureIgnoreCase);
+                        if (index != -1)
                         {
-                            string? hex = ((layer.Values().First() as JValue).Value as string)?.ToUpper();
-                            string layerName = name.Replace("_raw", String.Empty);
-                            int index = originalText.IndexOf(hex, StringComparison.CurrentCultureIgnoreCase);
-                            if (index != -1)
-                            {
-                                int layerIndex = index;
-                                indexToLayer[layerIndex] = layerName;
-                            }
+                            int layerIndex = index;
+                            indexToLayer[layerIndex] = layerName;
                         }
                     }
 
