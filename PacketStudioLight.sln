@@ -11,7 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastPcapng.DataBending", "F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PacketGenGenerator", "PacketGenGenerator\PacketGenGenerator.csproj", "{5F5A9392-20FA-439B-BC38-4BBB60F0D881}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketGen", "PacketGen\PacketGen.csproj", "{F05335E1-FD8B-4B15-A1AA-CC846C13AA0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PacketGen", "PacketGen\PacketGen.csproj", "{F05335E1-FD8B-4B15-A1AA-CC846C13AA0A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryPcapng", "MemoryPcapng\MemoryPcapng.csproj", "{1CB05E4B-7666-4277-88FA-D4F90F85882D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryPcapng.Tests", "MemoryPcapng.Tests\MemoryPcapng.Tests.csproj", "{6AF9CF95-6F22-449D-A051-269805893D56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{F05335E1-FD8B-4B15-A1AA-CC846C13AA0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F05335E1-FD8B-4B15-A1AA-CC846C13AA0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F05335E1-FD8B-4B15-A1AA-CC846C13AA0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CB05E4B-7666-4277-88FA-D4F90F85882D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CB05E4B-7666-4277-88FA-D4F90F85882D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CB05E4B-7666-4277-88FA-D4F90F85882D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CB05E4B-7666-4277-88FA-D4F90F85882D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AF9CF95-6F22-449D-A051-269805893D56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AF9CF95-6F22-449D-A051-269805893D56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AF9CF95-6F22-449D-A051-269805893D56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AF9CF95-6F22-449D-A051-269805893D56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

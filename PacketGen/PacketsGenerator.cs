@@ -185,7 +185,7 @@ namespace PacketGen
             }
             else
             {
-                if (!Enum.TryParse(ENCAPSULATION_TYPE, true, out linkLayer))
+                if (!Enum.TryParse<LinkLayers>(ENCAPSULATION_TYPE, true, out linkLayer))
                     throw new Exception($"Can't parse link layer '{ENCAPSULATION_TYPE}'");
             }
 

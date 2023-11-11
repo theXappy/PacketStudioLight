@@ -77,36 +77,37 @@ namespace PacketStudioLight
             _packetsSaver = new TempPacketsSaver();
         }
 
-        public async Task<string[]> GetPacketsDescriptions(MemoryPcapng memPcapng)
-        {
-            StringBuilder sbOut = new StringBuilder();
-            StringBuilder sbErr = new StringBuilder();
+        //public async Task<string[]> GetPacketsDescriptions(MemoryPcapng.Pcapng memPcapng)
+        //{
+        //    StringBuilder sbOut = new StringBuilder();
+        //    StringBuilder sbErr = new StringBuilder();
 
-            var wsSender = new WiresharkPipeSender();
-            string pipeName = "psl_2_ts_pipe" + (new Random()).Next();
+        //    var wsSender = new WiresharkPipeSender();
+        //    string pipeName = "psl_2_ts_pipe" + (new Random()).Next();
             
-            // Run sender in 1st thread
-            var senderTask = wsSender.SendPcapngAsync(pipeName, memPcapng);
+        //    // Run sender in 1st thread
+        //    var senderTask = wsSender.SendPcapngAsync(pipeName, memPcapng);
             
-            // Run wireshark on 2nd thread
-            Command command =  CliWrap.Cli.Wrap(TsharkPath)
-                    .WithArguments($"-i \\\\.\\pipe\\{pipeName}")
-                    .WithStandardOutputPipe(PipeTarget.ToStringBuilder(sbOut, Encoding.UTF8))
-                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(sbErr, Encoding.UTF8));
-            CommandTask<CommandResult>? wsSessionTask = command.ExecuteAsync();
+        //    // Run wireshark on 2nd thread
+        //    Command command =  CliWrap.Cli.Wrap(TsharkPath)
+        //            .WithArguments($"-i \\\\.\\pipe\\{pipeName}")
+        //            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(sbOut, Encoding.UTF8))
+        //            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(sbErr, Encoding.UTF8));
+        //    CommandTask<CommandResult>? wsSessionTask = command.ExecuteAsync();
 
-            // Wait for wireshark to exit
-            try
-            {
-                await wsSessionTask.Task;
-                return sbOut.ToString().Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            }
-            catch(Exception e)
-            {
-                Debugger.Break();
-                throw;
-            }
-        }
+        //    // Wait for wireshark to exit
+        //    try
+        //    {
+        //        await wsSessionTask.Task;
+        //        return sbOut.ToString().Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        //    }
+        //    catch(Exception e)
+        //    {
+        //        Debugger.Break();
+        //        throw;
+        //    }
+        //}
+
         public async Task<string[]> GetPacketsDescriptions(string path)
         {
             StringBuilder sb = new StringBuilder();
@@ -291,35 +292,36 @@ namespace PacketStudioLight
 
             return cli;
         }
-        public async Task<string[]> GetTextOutputAsync(MemoryPcapng memPcapng)
+        public async Task<string[]> GetTextOutputAsync(MemoryPcapng.Pcapng memPcapng)
         {
-            StringBuilder sbOut = new StringBuilder();
-            StringBuilder sbErr = new StringBuilder();
+            throw new NotImplementedException();
+            //StringBuilder sbOut = new StringBuilder();
+            //StringBuilder sbErr = new StringBuilder();
 
-            var wsSender = new WiresharkPipeSender();
-            string pipeName = "psl_2_ts_pipe" + (new Random()).Next();
+            //var wsSender = new WiresharkPipeSender();
+            //string pipeName = "psl_2_ts_pipe" + (new Random()).Next();
 
-            // Run sender in 1st thread
-            var senderTask = wsSender.SendPcapngAsync(pipeName, memPcapng);
+            //// Run sender in 1st thread
+            //var senderTask = wsSender.SendPcapngAsync(pipeName, memPcapng);
 
-            // Run wireshark on 2nd thread
-            Command command = CliWrap.Cli.Wrap(TsharkPath)
-                .WithArguments(GetTextOutputArgs(@"\\.\pipe\" + pipeName))
-                .WithStandardOutputPipe(PipeTarget.ToStringBuilder(sbOut, Encoding.UTF8))
-                .WithStandardErrorPipe(PipeTarget.ToStringBuilder(sbErr, Encoding.UTF8));
-            CommandTask<CommandResult>? wsSessionTask = command.ExecuteAsync();
+            //// Run wireshark on 2nd thread
+            //Command command = CliWrap.Cli.Wrap(TsharkPath)
+            //    .WithArguments(GetTextOutputArgs(@"\\.\pipe\" + pipeName))
+            //    .WithStandardOutputPipe(PipeTarget.ToStringBuilder(sbOut, Encoding.UTF8))
+            //    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(sbErr, Encoding.UTF8));
+            //CommandTask<CommandResult>? wsSessionTask = command.ExecuteAsync();
 
-            // Wait for wireshark to exit
-            try
-            {
-                await wsSessionTask.Task;
-                return sbOut.ToString().Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            }
-            catch (Exception e)
-            {
-                Debugger.Break();
-                throw;
-            }
+            //// Wait for wireshark to exit
+            //try
+            //{
+            //    await wsSessionTask.Task;
+            //    return sbOut.ToString().Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            //}
+            //catch (Exception e)
+            //{
+            //    Debugger.Break();
+            //    throw;
+            //}
         }
 
 

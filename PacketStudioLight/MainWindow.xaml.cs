@@ -1,6 +1,4 @@
 using Haukcode.PcapngUtils.Common;
-using Haukcode.PcapngUtils.PcapNG.BlockTypes;
-using Haukcode.PcapngUtils.PcapNG;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -8,22 +6,24 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Diagnostics;
-using System.Xml.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Xml;
-using FastPcapng;
 using PacketGen;
 using PacketDotNet;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Controls;
 using Haukcode.PcapngUtils.PcapNG.CommonTypes;
 using Haukcode.PcapngUtils.PcapNG.OptionTypes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Media;
+using System.Xml.Linq;
+using MemoryPcapng;
+using InterfaceDescriptionBlock = MemoryPcapng.InterfaceDescriptionBlock;
 
 namespace PacketStudioLight
 {
@@ -46,7 +46,6 @@ namespace PacketStudioLight
                 _mw.disablerBlock.Visibility = Visibility.Hidden;
                 _mw.CenterPanelsArea.IsEnabled = false;
                 _mw.MainToolBarTray.IsEnabled = false;
-                _mw._overrides = new();
 
                 foreach (var subMenuItem in _mw.MainMenu.Items)
                 {
@@ -85,10 +84,8 @@ namespace PacketStudioLight
         private string _wsDir { get; set; }
         string WiresharkPath => Path.Combine(_wsDir, "wireshark.exe");
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
-        TSharkInterop op => new TSharkInterop(TsharkPath);
+        private TSharkInterop op => new TSharkInterop(TsharkPath);
 
-        private MemoryPcapng _memoryPcapng;
-        Dictionary<int, PacketOverride> _overrides;
 
         private Dictionary<string, string> _templates;
 
@@ -167,7 +164,7 @@ namespace PacketStudioLight
                 packetTextBox.TextArea.PerformTextInput(template + "\n");
             }
         }
-        
+
 
         private async void OpenButtonClicked(object sender, RoutedEventArgs e)
         {
@@ -186,22 +183,54 @@ namespace PacketStudioLight
             // User didn't cancel & actually chose a pcapng file. We can clear the old data now.
             using (new FileLoadUiFreezeContext(this, "Loading..."))
             {
-                _memoryPcapng = MemoryPcapng.ParsePcapng(capPath);
+                pcapng = MemoryPcapng.Pcapng.FromFile(capPath);
                 await UpdatePacketsListAsync();
             }
         }
 
+        private Pcapng pcapng = null;
+        private PacketDescriptionsList pdl = null;
+        private PacketsListBoxViewModel newDataContext = null;
+
         private async Task UpdatePacketsListAsync()
         {
-            // When you are ready to implement Packet List Coloring use this line
+            // TODO: When you are ready to implement Packet List Coloring use this line
             // string[] results = await op.GetTextOutputAsync(_memoryPcapng);
-            string[] results = await op.GetPacketsDescriptions(_memoryPcapng);
-            var newDataContext = new PacketsListBoxViewModel(new ObservableCollection<string>(results));
-            newDataContext.Updated += HandlePacketsDraggedAndDropped;
-            packetsListBox.DataContext = newDataContext;
 
-            // Packets Counter in status bar
-            packetsCountLabel.Text = results.Length.ToString();
+            // God, I hate that I have to do this here...
+            void Adder(ObservableCollection<string> arg1, TSharkOutputEvent arg2)
+            {
+                Dispatcher.Invoke(() => PacketDescriptionsList.NormalDescriptionsUpdate(arg1, arg2));
+            }
+            void Remover(ObservableCollection<string> arg1, int arg2)
+            {
+                Dispatcher.Invoke(() => PacketDescriptionsList.NormalDescriptionsRemover(arg1, arg2));
+            }
+
+            // TODO: Move to CTOR?
+            if (pdl == null)
+            {
+                ObservableCollection<string> list = new ObservableCollection<string>();
+                pdl = new PacketDescriptionsList(list, Adder, Remover);
+                newDataContext = new PacketsListBoxViewModel(list);
+                newDataContext.Updated += HandlePacketsDraggedAndDropped;
+                packetsCountLabel.DataContext = pdl.Descriptions;
+            }
+
+            totalPacketsCountLabel.Text = pcapng.PacketsCount.ToString();
+            packetsListBox.DataContext = null;
+            Console.WriteLine($"[{DateTime.Now}] Disabled processing...");
+            await pdl.UpdateAsync(this.pcapng);
+            using (Dispatcher.DisableProcessing())
+            {
+                packetsListBox.DataContext = newDataContext;
+            }
+
+            Console.WriteLine($"[{DateTime.Now}] Re-enabled processing...");
+
+
+            // TODO: Just bind that shit to the observable list's length...
+            //packetsCountLabel.Text = pdl.Descriptions.Count.ToString();
         }
 
         private void HandlePacketsDraggedAndDropped(object? sender, PacketMovedEventArgs e)
@@ -212,8 +241,7 @@ namespace PacketStudioLight
             loadingStatusLabel.Visibility = Visibility.Visible;
 
             // Now let's move the Packet Blocks in the memory pcap
-            ApplyOverrides();
-            await Task.Run(() => _memoryPcapng.MovePacket(e.FromIndex, e.ToIndex));
+            await Task.Run(() => pcapng.MovePacketBlock(e.FromIndex, e.ToIndex));
 
             PacketsListBoxViewModel vm = sender as PacketsListBoxViewModel;
             vm.Updated -= HandlePacketsDraggedAndDropped;
@@ -221,44 +249,6 @@ namespace PacketStudioLight
             await UpdatePacketsListAsync();
 
             loadingStatusLabel.Visibility = Visibility.Hidden;
-        }
-
-        private void ApplyOverrides()
-        {
-            foreach (var (pktIndex, pktOverride) in _overrides)
-            {
-                // TODO: Does using "first" here make sense?
-                InterfaceDescriptionBlock? iface = (_memoryPcapng.Interfaces.FirstOrDefault(iface =>
-                    (LinkLayerType)iface.LinkType == (LinkLayerType)pktOverride.LinkLayer));
-                int ifaceIndex = _memoryPcapng.Interfaces.IndexOf(iface);
-
-                // Construct new packet, mostly using the old packet in the same index
-                EnhancedPacketBlock originalPacket = _memoryPcapng.GetPacket(pktIndex);
-                originalPacket.InterfaceID = ifaceIndex; // TODO: We might move packets between interface for no reason if the link types are the same
-                originalPacket.Data = pktOverride.Data;
-                List<string> comments = new List<string>();
-                if (originalPacket is EnhancedPacketBlock originalEpb)
-                {
-                    // Readding packet comments EXCEPT any old Packet Studio Light comments
-                    // (We are going to add our one, if required, anyway.
-                    foreach (string comment in originalEpb.Options.Comments)
-                    {
-                        if (!PslcCommentsEncoder.TryDecode(comment, out _))
-                            comments.Add(comment);
-                    }
-                }
-                byte[] data = pktOverride.Data;
-                comments.Add(PslcCommentsEncoder.Encode(pktOverride.OriginalText));
-                EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
-                    new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),
-                    data.Length,
-                    data,
-                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comments));
-
-                // Update packet!
-                _memoryPcapng.UpdatePacket(pktIndex, epb);
-            }
-            _overrides.Clear();
         }
 
         private int? _lastPacketEditorOffset;
@@ -270,40 +260,38 @@ namespace PacketStudioLight
                 return;
             }
 
-
-            IPacket pkt = _memoryPcapng.GetPacket(packetsListBox.SelectedIndex);
-            byte[] data = pkt.Data;
-            if (_overrides.TryGetValue(packetsListBox.SelectedIndex, out var pktOverride))
+            EnhancedPacketBlock epb = new EnhancedPacketBlock(pcapng.GetPacketBlock(packetsListBox.SelectedIndex));
+            bool recoveredFromComment = false;
+            BlockOptions options = BlockOptions.Parse(epb.Options);
+            foreach (string comment in options.GetComments())
             {
-                packetTextBox.Text = pktOverride.OriginalText;
+                if (PslcCommentsEncoder.TryDecode(comment, out string pktDescription))
+                {
+                    // Found a PacketStudioLight packet desc, we'll use it for the text editor.
+                    packetTextBox.Text = pktDescription;
+                    recoveredFromComment = true;
+                    break;
+                }
             }
-            else
-            {
-                bool recoveredFromComment = false;
-                if (pkt is EnhancedPacketBlock epb)
-                {
-                    foreach (string comment in epb.Options.Comments)
-                    {
-                        if (PslcCommentsEncoder.TryDecode(comment, out string pktDescription))
-                        {
-                            // Found a PacketStudioLight packet desc, we'll use it for the text editor.
-                            packetTextBox.Text = pktDescription;
-                            recoveredFromComment = true;
-                            break;
-                        }
-                    }
-                }
 
-                if (!recoveredFromComment)
-                {
-                    // Just use the bytes from the EPB
-                    packetTextBox.Text = BitConverter.ToString(data).Replace("-", String.Empty);
-                }
+            if (!recoveredFromComment)
+            {
+                // Just use the bytes from the EPB
+                byte[] data = epb.PacketData.ToArray();
+                packetTextBox.Text = BitConverter.ToString(data).Replace("-", String.Empty);
             }
 
             if (_lastPacketEditorOffset != null)
             {
-                packetTextBox.CaretOffset = _lastPacketEditorOffset.Value;
+                try
+                {
+                    packetTextBox.CaretOffset = _lastPacketEditorOffset.Value;
+                }
+                catch
+                {
+                    // Might throw if user switched packets JUST in time.
+                }
+
                 _lastPacketEditorOffset = null;
             }
         }
@@ -314,12 +302,14 @@ namespace PacketStudioLight
         private async void packetTextBox_TextChanged_Base(object sender, EventArgs e)
         {
             bool enteredRefreshEvent = false;
+            LinkLayerType? newLinkLayer = null;
             try
             {
                 int pktIndex = packetsListBox.SelectedIndex;
                 if (pktIndex == -1)
                     return;
                 string originalText = packetTextBox.Text;
+                bool saveOriginalText = false;
 
                 string[] lines = packetTextBox.Text.Split('\n');
 
@@ -330,18 +320,11 @@ namespace PacketStudioLight
                     lines[0].Contains("Generate: "))
                 {
                     (string type, Dictionary<string, string> variables) = Parser.Parse(lines);
-
-
                     (Packet p, LinkLayers linkLayer) = PacketsGenerator.Generate(type, variables);
-
+                    newLinkLayer = (LinkLayerType)linkLayer;
                     data = p.Bytes;
-                    pktOverride = new PacketOverride()
-                    {
-                        Data = data,
-                        OriginalText = originalText,
-                        LinkLayer = linkLayer
-                    };
-                    _overrides[pktIndex] = pktOverride;
+
+                    saveOriginalText = true; // Always save 'generate' comments
                 }
                 else
                 {
@@ -355,65 +338,28 @@ namespace PacketStudioLight
                             .Replace("\n", string.Empty))
                         .ToArray();
                     string joined = String.Join(String.Empty, cleanedLines);
-
                     data = GetBytesFromHex(joined);
 
+
                     // User changed the definition of the packet.
-                    // If it's a custom definition (with new lines, comments, spaces to seperate bytes...)
-                    // we want to store it as an "override".
+                    // If it's a custom definition (with new lines, comments, spaces to separate bytes...)
+                    // we want to store it as an "PSL Comment".
                     // If it's just the normal hex stream (either because we JUST opened this packet OR the user
-                    // restored the editor's state to unchanged) we DON'T want to restore it and further more - we
-                    // want to get rid of any left over overrides.
+                    // restored the editor's state to unchanged) we DON'T want to save it.
                     //
                     // This checks if the hex editor actually has different content than the raw hex stream.
                     if (!joined.Equals(originalText, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        pktOverride = new PacketOverride
-                        {
-                            Data = data,
-                            OriginalText = originalText,
-                        };
-                        _overrides[pktIndex] = pktOverride;
-                    }
-                    else
-                    {
-                        _overrides.Remove(pktIndex);
+                        // Store as a new comment!
+                        saveOriginalText = true;
                     }
                 }
 
                 // No errors in hex
                 SetCompiledHex(data);
 
-
-
-                IPacket pkt = _memoryPcapng.GetPacket(pktIndex);
-                LinkLayerType llt = LinkLayerType.Ethernet;
-                if (pkt is EnhancedPacketBlock)
-                {
-                    llt = (LinkLayerType)_memoryPcapng
-                        .Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
-                }
-
-                if (pktOverride?.LinkLayer != null)
-                    llt = (LinkLayerType)pktOverride.LinkLayer.Value;
-
-                // BEWARE: LAZY CODE AHEAD
-                bool overrideDetected = false;
-                if (!pkt.Data.SequenceEqual(data))
-                {
-                    overrideDetected = true;
-                    pktOverride = new PacketOverride
-                    {
-                        Data = data,
-                        OriginalText = originalText,
-                        LinkLayer = (LinkLayers)llt
-                    };
-                    _overrides[pktIndex] = pktOverride;
-                    ApplyOverrides();
-
-                    pkt = _memoryPcapng.GetPacket(pktIndex);
-                    data = pkt.Data;
-                }
+                string pslComment = saveOriginalText ? originalText : null;
+                bool packetChanged = ModifyPacketBlock(pcapng, pktIndex, data, newLinkLayer, pslComment);
 
                 // Check if this event is geniun - from the user.
                 // If we can't grab the lock, that means we caused this event while handling another event.
@@ -426,12 +372,13 @@ namespace PacketStudioLight
                 enteredRefreshEvent = true;
 
                 // Update tree
-                XElement pdml = await op.GetPdmlAsync(new TempPacketSaveData(data, llt));
+                newLinkLayer ??= GetPacketLinkLayer(pktIndex);
+                XElement pdml = await op.GetPdmlAsync(new TempPacketSaveData(data, newLinkLayer.Value));
                 XDocument doc = new XDocument(pdml);
                 treeView.DataContext = doc;
                 treeView.ItemsSource = doc.Root.Elements();
 
-                if (overrideDetected)
+                if (packetChanged)
                 {
                     // Update packets list
                     await UpdatePacketsListAsync();
@@ -447,6 +394,87 @@ namespace PacketStudioLight
                 if (enteredRefreshEvent)
                     _tsharkDataRefreshEvent.Set();
             }
+        }
+
+        private LinkLayerType GetPacketLinkLayer(int pktIndex)
+        {
+            EnhancedPacketBlock epb = new EnhancedPacketBlock(pcapng.GetPacketBlock(pktIndex));
+            InterfaceDescriptionBlock idb =
+                new InterfaceDescriptionBlock(pcapng.GetInterfaceBlock(epb.InterfaceID));
+            return (LinkLayerType)idb.LinkType;
+        }
+
+        private int GetOrCreateInterface(Pcapng pcapng, LinkLayerType linkLayer)
+        {
+            for (int i = 0; i < pcapng.InterfacesCount; i++)
+            {
+                Memory<byte> mem = pcapng.GetInterfaceBlock(i);
+                LinkLayerType oldLinkLayer = (LinkLayerType)new InterfaceDescriptionBlock(mem).LinkType;
+                if (oldLinkLayer == linkLayer)
+                    return i;
+            }
+
+            var options = new InterfaceDescriptionOption(Name: $"fake_interface_{linkLayer}");
+            Haukcode.PcapngUtils.PcapNG.BlockTypes.InterfaceDescriptionBlock ifaceBlock =
+                new Haukcode.PcapngUtils.PcapNG.BlockTypes.InterfaceDescriptionBlock((LinkTypes)linkLayer, 0, options);
+            byte[] newIface = ifaceBlock.ConvertToByte(false, _ => { });
+            pcapng.AppendInterfaceBlock(newIface);
+
+            int newIfaceIndex = pcapng.InterfacesCount - 1;
+            return newIfaceIndex;
+        }
+
+        private bool ModifyPacketBlock(Pcapng pcapng, int pktIndex, byte[] newData, LinkLayerType? newLinkLayer, string? pslComment)
+        {
+            bool anyChanges = false;
+
+            var block = pcapng.GetPacketBlock(pktIndex);
+            MemoryPcapng.EnhancedPacketBlock epb = new MemoryPcapng.EnhancedPacketBlock(block);
+
+            if (newLinkLayer != null)
+            {
+                int newInterfaceId = GetOrCreateInterface(pcapng, newLinkLayer.Value);
+                if (epb.InterfaceID != newInterfaceId)
+                {
+                    epb.InterfaceID = newInterfaceId;
+                    anyChanges = true;
+                }
+            }
+
+            if (!epb.PacketData.Span.SequenceEqual(newData))
+            {
+                epb.PacketData = newData;
+                anyChanges = true;
+            }
+
+            // Comments are NOT a worthy change to indicate back
+            UpdatePslComment(ref epb, pslComment);
+
+            if (epb.BackingMemoryChanged)
+            {
+                pcapng.SetPacketBlock(pktIndex, epb.Memory);
+            }
+
+            return anyChanges;
+        }
+
+        private void UpdatePslComment(ref EnhancedPacketBlock epb, string newComment)
+        {
+            BlockOptions options = BlockOptions.Parse(epb.Options);
+            foreach (string comment in options.GetComments())
+            {
+                if (PslcCommentsEncoder.TryDecode(comment, out string pktDescription))
+                {
+                    // Old comment
+                    options.RemoveComment(comment);
+                    break;
+                }
+            }
+
+            if (newComment != null)
+                options.AddComment(PslcCommentsEncoder.Encode(newComment));
+
+            epb.Options = options.ToBytes();
         }
 
         private void MarkStaleCompiledHex()
@@ -478,39 +506,8 @@ namespace PacketStudioLight
         {
             string tempPath = Path.ChangeExtension(Path.GetTempFileName(), "pcapng");
             using FileStream fs = File.OpenWrite(tempPath);
-            PcapNGWriter writer = new PcapNGWriter(fs);
+            pcapng.WriteTo(fs);
 
-            for (int pktIndex = 0; pktIndex < packetsListBox.Items.Count; pktIndex++)
-            {
-                IPacket originalPacket = _memoryPcapng.GetPacket(pktIndex);
-                byte[] data = originalPacket.Data;
-
-                List<string> comments = new List<string>();
-                if (originalPacket is EnhancedPacketBlock originalEpb)
-                {
-                    // Readding packet comments EXCEPT any old Packet Studio Light comments
-                    // (We are going to add our one, if required, anyway.
-                    foreach (string comment in originalEpb.Options.Comments)
-                    {
-                        if (!PslcCommentsEncoder.TryDecode(comment, out _))
-                            comments.Add(comment);
-                    }
-                }
-                if (_overrides.TryGetValue(pktIndex, out var pktOverride))
-                {
-                    data = pktOverride.Data;
-                    comments.Add(PslcCommentsEncoder.Encode(pktOverride.OriginalText));
-                }
-                EnhancedPacketBlock epb = new EnhancedPacketBlock(0,
-                    new Haukcode.PcapngUtils.PcapNG.CommonTypes.TimestampHelper(originalPacket.Seconds, originalPacket.Microseconds),
-                    data.Length,
-                    data,
-                    new Haukcode.PcapngUtils.PcapNG.OptionTypes.EnhancedPacketOption(comments));
-
-                writer.WritePacket(epb);
-            }
-
-            writer.Close();
             fs.Close();
             Process.Start(@"C:\Development\wsbuild64\run\RelWithDebInfo\Wireshark.exe", tempPath);
         }
@@ -533,13 +530,9 @@ namespace PacketStudioLight
                 // Calling this makes sure the hex is valid (otherwise an exception is thrown)
                 byte[] data = GetBytesFromHex(joined);
 
-                IPacket pkt = _memoryPcapng.GetPacket(packetsListBox.SelectedIndex);
-                LinkLayerType llt = LinkLayerType.Ethernet;
-                if (pkt is EnhancedPacketBlock)
-                {
-                    llt = (LinkLayerType)_memoryPcapng.Interfaces[((EnhancedPacketBlock)pkt).AssociatedInterfaceID.Value].LinkType;
-                }
-
+                var block = pcapng.GetPacketBlock(packetsListBox.SelectedIndex);
+                MemoryPcapng.EnhancedPacketBlock epb = new MemoryPcapng.EnhancedPacketBlock(block);
+                LinkLayerType llt = (LinkLayerType)new InterfaceDescriptionBlock(pcapng.GetInterfaceBlock(epb.InterfaceID)).LinkType;
 
                 var tsharkTask = op.GetJsonRawAsync(new TempPacketSaveData(data, llt)).ContinueWith(t =>
                 {
@@ -671,8 +664,7 @@ namespace PacketStudioLight
             }
 
 
-            ApplyOverrides();
-            _memoryPcapng.WriteTo(fs);
+            pcapng.WriteTo(fs);
             fs.Close();
         }
 
@@ -748,7 +740,7 @@ namespace PacketStudioLight
                 string tempFile = await Task.Run(() => saver.WritePacket(
                     new TempPacketSaveData(new byte[] { 0x11, 0x22, 0x33 }, LinkLayerType.Ethernet)));
 
-                _memoryPcapng = MemoryPcapng.ParsePcapng(tempFile);
+                pcapng = Pcapng.FromFile(tempFile);
                 await UpdatePacketsListAsync();
 
                 // Select first packet
@@ -759,8 +751,13 @@ namespace PacketStudioLight
         private async void NewPacketClicked(object sender, RoutedEventArgs e)
         {
             SetStatus("Adding Packet...");
-            _memoryPcapng.AppendPacket(new EnhancedPacketBlock(0, new TimestampHelper(0, 0), 3,
-                new byte[] { 0x11, 0x22, 0x33 }, new EnhancedPacketOption()));
+            pdl.Descriptions.Add("Creating Packet...");
+
+            Haukcode.PcapngUtils.PcapNG.BlockTypes.EnhancedPacketBlock epb =
+                new Haukcode.PcapngUtils.PcapNG.BlockTypes.EnhancedPacketBlock(0, new TimestampHelper(0, 0), 3, new byte[] { 0x11, 0x22, 0x33 },
+                    new EnhancedPacketOption());
+            byte[] bytes = epb.ConvertToByte(false, _ => { });
+            pcapng.AppendPacketBlock(bytes);
             await UpdatePacketsListAsync();
             SetStatus("Adding Packet...", isError: false);
         }
@@ -781,7 +778,8 @@ namespace PacketStudioLight
             int newSelectedIndex = Math.Max(selectedIndex - 1, 0);
 
             SetStatus("Deleting Packet...");
-            await Task.Run(() => _memoryPcapng.RemovePacket(selectedIndex));
+            pdl.Descriptions[selectedIndex] = "Deleting Packet...";
+            await Task.Run(() => pcapng.RemovePacketBlock(selectedIndex));
             await UpdatePacketsListAsync();
             packetsListBox.SelectedIndex = newSelectedIndex;
             SetStatus("Packet Deleted.", isError: false);
