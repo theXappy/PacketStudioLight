@@ -46,7 +46,7 @@
             int packetsCounter = 0;
             if (!File.Exists(@"C:\Program Files\Wireshark\tshark.exe"))
                 throw new InconclusiveException("TShark not found");
-            TShark t = new TShark(@"C:\Program Files\Wireshark\tshark.exe");
+            TShark t = new TShark(@"C:\Program Files\Wireshark\tshark.exe", TSharkOutputMode.Fields);
             t.NewPacketLine += (sender, s) => packetsCounter++;
 
             // Act

@@ -14,6 +14,7 @@ using System.Xml;
 using PacketGen;
 using PacketDotNet;
 using System.Collections.ObjectModel;
+using System.IO.Pipes;
 using System.Windows.Controls;
 using Haukcode.PcapngUtils.PcapNG.CommonTypes;
 using Haukcode.PcapngUtils.PcapNG.OptionTypes;
@@ -76,6 +77,7 @@ namespace PacketStudioLight
         string TsharkPath => Path.Combine(_wsDir, "tshark.exe");
         private TSharkInterop op => new(TsharkPath);
 
+        private object _pcapngLock = new();
         private Pcapng _pcapng;
         private PacketDescriptionsList _pdl;
         private PacketsListBoxViewModel _newDataContext;
@@ -210,7 +212,11 @@ namespace PacketStudioLight
             }
 
             totalPacketsCountLabel.Text = _pcapng.PacketsCount.ToString();
-            await _pdl.UpdateAsync(this._pcapng);
+
+
+            Debug.WriteLine($"[!][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Calling update async...");
+            await _pdl.UpdateAsync(TsharkPath, _pcapng);
+            Debug.WriteLine($"[!][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Returned from update async!");
 
             // TODO: Just bind that shit to the observable list's length...
             //packetsCountLabel.Text = pdl.Descriptions.Count.ToString();
@@ -287,12 +293,12 @@ namespace PacketStudioLight
             try
             {
                 int currThreadVersion = Interlocked.Increment(ref _packetTreeVersion);
-
                 Debug.WriteLine(
-                    $"[!] Allocated currThreadVersion = {currThreadVersion}, current version is {_packetTreeVersion}");
+                    $"[!][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Allocated currThreadVersion = {currThreadVersion}, current version is {_packetTreeVersion}");
                 int pktIndex = packetsListBox.SelectedIndex;
                 if (pktIndex == -1)
                     return;
+
                 string originalText = packetTextBox.Text;
                 bool saveOriginalText = false;
 
@@ -341,48 +347,69 @@ namespace PacketStudioLight
 
                 // No errors in hex
                 SetCompiledHex(data);
+                treeView.ItemsSource = null;
 
+                Debug.WriteLine($"[V][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Modifying pcapng");
                 string pslComment = saveOriginalText ? originalText : null;
-                bool packetChanged = ModifyPacketBlock(_pcapng, pktIndex, data, newLinkLayer, pslComment);
-
-                // Update tree
-                newLinkLayer ??= GetPacketLinkLayer(pktIndex);
-                XElement pdml = null;
+                bool packetChanged = ModifyPacketBlock(pktIndex, data, newLinkLayer, pslComment);
+                Debug.WriteLine($"[V][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Modified pcapng");
+                if (!packetChanged) 
+                    return;
 
                 // Check if other threads started running this method after the CURRENT thread
                 // if so, skip the PDML generation
                 if (currThreadVersion != _packetTreeVersion)
                 {
-                    Debug.WriteLine(
-                        $"[!] Avoided generating PDML for version {currThreadVersion}, current version is {_packetTreeVersion}");
+                    //[!] Avoided generating PDML 
                     return;
                 }
 
-                Debug.WriteLine(
-                    $"[V] Generating PDML for version {currThreadVersion}, current version is {_packetTreeVersion}");
-                pdml = await op.GetPdmlAsync(new TempPacketSaveData(data, newLinkLayer.Value));
+                // Update tree
+                using TShark tshark = await TShark.CreateNew(TsharkPath, TSharkOutputMode.Pdml);
+                tshark.NewPacketLine += (_, pdmlEvent) =>
+                {
+                    if (currThreadVersion != _packetTreeVersion)
+                    {
+                        // Avoided update Tree View
+                        return;
+                    }
 
-                // Check if other threads started while we were generating PDML
-                // if so, skip setting the PDML into the Tree View & packet list update.
+                    Debug.WriteLine($"[V][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Updating Tree View for version {currThreadVersion}, current version is {_packetTreeVersion}");
+                    XElement pdml = TSharkInterop.ParsePdmlAsync(pdmlEvent.Line, 0, CancellationToken.None).Result;
+                    XDocument doc = new XDocument(pdml);
+                    Dispatcher.Invoke(() =>
+                    {
+                        treeView.ItemsSource = doc.Root.Elements();
+                        Debug.WriteLine($"[V][{DateTime.Now:MM/dd/yyyy hh:mm:ss.fff}] Updated Tree View for version {currThreadVersion}, current version is {_packetTreeVersion}");
+                    });
+                };
+
                 if (currThreadVersion != _packetTreeVersion)
                 {
-                    Debug.WriteLine(
-                        $"[!] Avoided update Tree View and Packets List for version {currThreadVersion}, current version is {_packetTreeVersion}");
+                    // Avoided using TShark for PDML for version
                     return;
                 }
 
-                Debug.WriteLine(
-                    $"[V] Updating Tree View for version {currThreadVersion}, current version is {_packetTreeVersion}");
-                XDocument doc = new XDocument(pdml);
-                treeView.DataContext = doc;
-                treeView.ItemsSource = doc.Root.Elements();
-
-                if (packetChanged)
+                // Writing tiny pcapng (just our packet)
+                _ = Task.Run(() =>
                 {
-                    // Update packets list
-                    await UpdatePacketsListAsync();
-                    packetsListBox.SelectedIndex = pktIndex;
-                }
+                    tshark.Pipe.WriteAsync(_pcapng.GetSectionHeaderBlock());
+                    tshark.Pipe.Flush();
+                    foreach (var ifaceBlock in _pcapng.GetInterfaceBlocks())
+                    {
+                        tshark.Pipe.WriteAsync(ifaceBlock);
+                        tshark.Pipe.Flush();
+                    }
+                    tshark.Pipe.WriteAsync(_pcapng.GetPacketBlock(pktIndex));
+                    tshark.Pipe.Flush();
+                    (tshark.Pipe as NamedPipeServerStream)?.WaitForPipeDrain();
+                    tshark.Pipe.Close();
+                });
+                await tshark.WaitForPacketsAsync(1);
+
+                // Update packets list
+                await UpdatePacketsListAsync();
+                packetsListBox.SelectedIndex = pktIndex;
             }
             catch
             {
@@ -418,38 +445,41 @@ namespace PacketStudioLight
             return newIfaceIndex;
         }
 
-        private bool ModifyPacketBlock(Pcapng pcapng, int pktIndex, byte[] newData, LinkLayerType? newLinkLayer, string? pslComment)
+        private bool ModifyPacketBlock(int pktIndex, byte[] newData, LinkLayerType? newLinkLayer, string? pslComment)
         {
-            bool anyChanges = false;
-
-            var block = pcapng.GetPacketBlock(pktIndex);
-            MemoryPcapng.EnhancedPacketBlock epb = new MemoryPcapng.EnhancedPacketBlock(block);
-
-            if (newLinkLayer != null)
+            lock (_pcapngLock)
             {
-                int newInterfaceId = GetOrCreateInterface(pcapng, newLinkLayer.Value);
-                if (epb.InterfaceID != newInterfaceId)
+                bool anyChanges = false;
+
+                var block = _pcapng.GetPacketBlock(pktIndex);
+                MemoryPcapng.EnhancedPacketBlock epb = new MemoryPcapng.EnhancedPacketBlock(block);
+
+                if (newLinkLayer != null)
                 {
-                    epb.InterfaceID = newInterfaceId;
+                    int newInterfaceId = GetOrCreateInterface(_pcapng, newLinkLayer.Value);
+                    if (epb.InterfaceID != newInterfaceId)
+                    {
+                        epb.InterfaceID = newInterfaceId;
+                        anyChanges = true;
+                    }
+                }
+
+                if (!epb.PacketData.Span.SequenceEqual(newData))
+                {
+                    epb.PacketData = newData;
                     anyChanges = true;
                 }
+
+                // Comments are NOT a worthy change to indicate back
+                UpdatePslComment(ref epb, pslComment);
+
+                if (epb.BackingMemoryChanged)
+                {
+                    _pcapng.SetPacketBlock(pktIndex, epb.Memory);
+                }
+
+                return anyChanges;
             }
-
-            if (!epb.PacketData.Span.SequenceEqual(newData))
-            {
-                epb.PacketData = newData;
-                anyChanges = true;
-            }
-
-            // Comments are NOT a worthy change to indicate back
-            UpdatePslComment(ref epb, pslComment);
-
-            if (epb.BackingMemoryChanged)
-            {
-                pcapng.SetPacketBlock(pktIndex, epb.Memory);
-            }
-
-            return anyChanges;
         }
 
         private void UpdatePslComment(ref EnhancedPacketBlock epb, string newComment)
@@ -535,13 +565,13 @@ namespace PacketStudioLight
                     foreach (var layer in layers)
                     {
                         string name = (layer as JProperty)?.Name;
-                        if (!name.EndsWith("_raw")) 
+                        if (!name.EndsWith("_raw"))
                             continue;
 
                         string layerName = name.Replace("_raw", String.Empty);
-                        if (layerName == "frame") 
+                        if (layerName == "frame")
                             continue;
-                        if (layerName == "_ws.lua.fake") 
+                        if (layerName == "_ws.lua.fake")
                             continue;
 
                         string? hex = ((layer.Values().First() as JValue).Value as string)?.ToUpper();
@@ -629,7 +659,7 @@ namespace PacketStudioLight
 
         private void SaveClicked(object sender, RoutedEventArgs e)
         {
-            if(_pcapng == null)
+            if (_pcapng == null)
             {
                 MessageBox.Show("Error: Nothing to save.", "Error");
                 return;

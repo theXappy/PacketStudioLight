@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 
 namespace MemoryPcapng
 {
@@ -106,9 +107,9 @@ namespace MemoryPcapng
                     value.CopyTo(output[offset..(offset + value.Length)]);
                     offset += value.Length;
                     // Pad to 32bits
-                    if (offset % 4 != 0)
+                    if (value.Length % 4 != 0)
                     {
-                        byte[] padding = new byte[4 - (offset % 4)];
+                        byte[] padding = new byte[4 - (value.Length % 4)];
                         padding.CopyTo(output[offset..(offset + padding.Length)]);
                         offset += padding.Length;
                     }
@@ -135,6 +136,9 @@ namespace MemoryPcapng
         public static BlockOptions Parse(Memory<byte> data) => Parse(data.ToArray());
         public static BlockOptions Parse(byte[] data)
         {
+            Debug.WriteLine("[!] BlockOtions Parse");
+            Debug.WriteLine(string.Join("", data.Select(x => $"{x:X2}").ToArray()));
+
             int offset = 0;
             BlockOptions opts = new BlockOptions();
             while (offset < data.Length)

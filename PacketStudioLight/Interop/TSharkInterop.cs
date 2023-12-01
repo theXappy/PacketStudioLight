@@ -511,7 +511,7 @@ namespace PacketStudioLight
             return selected;
         }
 
-        private Task<XElement> ParsePdmlAsync(string xml, int packetIndex, CancellationToken token)
+        public static Task<XElement> ParsePdmlAsync(string xml, int packetIndex, CancellationToken token)
         {
             return Task.Run((() =>
             {
@@ -528,6 +528,8 @@ namespace PacketStudioLight
                 XContainer skippedHeaderNode = (XContainer)xdoc.FirstNode?.NextNode?.NextNode;
                 if (skippedHeaderNode == null)
                 {
+                    var wtf = ((System.Xml.Linq.XElement)xdoc.FirstNode.NextNode);
+
                     // Old PDML Style
                     skippedHeaderNode = ((XContainer)xdoc.FirstNode);
                 }
@@ -535,16 +537,22 @@ namespace PacketStudioLight
                 XElement packetElement =
                     skippedHeaderNode.Elements("packet").ElementAt(packetIndex); // Getting the x-th 'packet' node
 
-                string singlePacketXml = packetElement.ToString();
-                XElement elem = XElement.Parse(singlePacketXml);
+                if (packetIndex != 0 || skippedHeaderNode.Elements("packet").Skip(1).Any())
+                {
+                    // I think this code is here remove any heap refs to all the other XML
+                    // elements if this is a BIG PDML with many packets.
+                    // This is why I first make sure there are any other packets at all. Otherwise, it's a waste of time.
 
-                // Hoping GC will get the cue
-                singlePacketXml = null;
-                packetElement = null;
-                xdoc = null;
+                    string singlePacketXml = packetElement.ToString();
+                    packetElement = XElement.Parse(singlePacketXml);
 
+                    // Hoping GC will get the cue
+                    singlePacketXml = null;
+                    packetElement = null;
+                    xdoc = null;
+                }
 
-                return elem;
+                return packetElement;
             }), token);
         }
         private Task<JObject?> ParseJsonAsync(string json, int packetIndex, CancellationToken token)

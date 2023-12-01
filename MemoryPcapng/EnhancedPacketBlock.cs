@@ -87,10 +87,11 @@
 
                 // Hard: Need copying
 
-                byte[] newData = new byte[28 + BinUtils.CellingPadTo4(value.Length) + OptionsLength + 4];
+                int paddedPayloadLength = BinUtils.CellingPadTo4(value.Length);
+                byte[] newData = new byte[28 + paddedPayloadLength + OptionsLength + 4];
                 Memory[..28].CopyTo(newData.AsMemory(0, 28));
                 value.CopyTo(newData.AsMemory(28, value.Length));
-                Options.CopyTo(newData.AsMemory(28 + BinUtils.CellingPadTo4(value.Length), OptionsLength));
+                Options.CopyTo(newData.AsMemory(28 + paddedPayloadLength, OptionsLength));
                 // Not copying Total block size, we will update in a second anyway.
 
                 Memory = newData.AsMemory();
@@ -114,17 +115,18 @@
                     throw new ArgumentException("Options section must align to 4-bytes boundary.");
                 }
 
+                int paddedPayloadLength = BinUtils.CellingPadTo4(CapturedPacketLength);
                 if (value.Length == OptionsLength)
                 {
                     // Easy: Can insert new data into old Memory<byte>
-                    value.CopyTo(Memory[(28 + CapturedPacketLength)..^4]);
+                    value.CopyTo(Memory[(28 + paddedPayloadLength)..^4]);
                     return;
                 }
 
                 // Hard: Need copying
-                byte[] newData = new byte[28 + BinUtils.CellingPadTo4(CapturedPacketLength) + value.Length + 4];
-                Memory[..(28 + CapturedPacketLength)].CopyTo(newData.AsMemory(0, 28 + CapturedPacketLength));
-                value.CopyTo(newData.AsMemory(28 + BinUtils.CellingPadTo4(CapturedPacketLength), value.Length));
+                byte[] newData = new byte[28 + paddedPayloadLength + value.Length + 4];
+                Memory[..(28 + paddedPayloadLength)].CopyTo(newData.AsMemory(0, 28 + paddedPayloadLength));
+                value.CopyTo(newData.AsMemory(28 + paddedPayloadLength, value.Length));
                 // Not copying Total block size, we will update in a second anyway.
 
                 Memory = newData.AsMemory();

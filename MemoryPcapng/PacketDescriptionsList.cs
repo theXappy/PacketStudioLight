@@ -20,13 +20,13 @@ public class PacketDescriptionsList
         _removeAction = removeAction;
     }
 
-    public Task UpdateAsync(Pcapng pcapng)
+    public Task UpdateAsync(string tsharkPath, Pcapng pcapng)
     {
         Debug.WriteLine($"[{DateTime.Now}] Starting task from main thread...");
-        return Task.Run(() =>
+        return Task.Factory.StartNew(() =>
         {
             Debug.WriteLine($"[{DateTime.Now}] TSharking...");
-            using TShark tshark = new TShark(@"C:\Program Files\Wireshark\tshark.exe");
+            using TShark tshark = new TShark(tsharkPath, TSharkOutputMode.Fields);
             Debug.WriteLine($"[{DateTime.Now}] Opened.");
             tshark.NewPacketLine += TsharkOnNewPacketLine;
             Debug.WriteLine($"[{DateTime.Now}] write to...");

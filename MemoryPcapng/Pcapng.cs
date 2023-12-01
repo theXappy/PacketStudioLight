@@ -8,16 +8,16 @@ namespace MemoryPcapng
         private static int InterfaceDescriptionBlockType = 0x00_00_00_01;
 
         private SemaphoreSlim _dataSemaphore = new(1);
-        private Memory<byte> _header;
+        private Memory<byte> _sectionHeader;
         private List<Memory<byte>> _interfaceBlocks;
         private List<Memory<byte>> _packetBlocks;
         public int InterfacesCount => _interfaceBlocks.Count;
         public int PacketsCount => _packetBlocks.Count;
-        private int Size => _header.Length + _interfaceBlocks.Sum(iface => iface.Length) + _packetBlocks.Sum(b => b.Length);
+        private int Size => _sectionHeader.Length + _interfaceBlocks.Sum(iface => iface.Length) + _packetBlocks.Sum(b => b.Length);
 
-        private Pcapng(Memory<byte> header, List<Memory<byte>> interfaces, List<Memory<byte>> packetBlocks)
+        private Pcapng(Memory<byte> sectionHeader, List<Memory<byte>> interfaces, List<Memory<byte>> packetBlocks)
         {
-            _header = header;
+            _sectionHeader = sectionHeader;
             _interfaceBlocks = interfaces;
             _packetBlocks = packetBlocks;
         }
@@ -77,6 +77,11 @@ namespace MemoryPcapng
             return new Pcapng(header, ifaces, packets);
         }
 
+        public Memory<byte> GetSectionHeaderBlock()
+        {
+            return _sectionHeader;
+        }
+
         public Memory<byte> GetPacketBlock(int index)
         {
             _dataSemaphore.Wait();
@@ -124,7 +129,7 @@ namespace MemoryPcapng
             {
                 BufferedStream bufferedStream = new BufferedStream(s, 50_000);
 
-                bufferedStream.Write(_header.Span);
+                bufferedStream.Write(_sectionHeader.Span);
                 foreach (Memory<byte> ifaceBlock in _interfaceBlocks)
                 {
                     bufferedStream.Write(ifaceBlock.Span);
@@ -151,7 +156,7 @@ namespace MemoryPcapng
             await _dataSemaphore.WaitAsync();
             try
             {
-                await s.WriteAsync(_header);
+                await s.WriteAsync(_sectionHeader);
                 foreach (Memory<byte> ifaceBlock in _interfaceBlocks)
                 {
                     await s.WriteAsync(ifaceBlock);
@@ -187,6 +192,14 @@ namespace MemoryPcapng
             //    offset += packetBlock.Length;
             //}
             return output;
+        }
+
+        public IReadOnlyList<Memory<byte>> GetInterfaceBlocks()
+        {
+            _dataSemaphore.Wait();
+            var ifaces = _interfaceBlocks.ToList();
+            _dataSemaphore.Release();
+            return ifaces;
         }
 
         public Memory<byte> GetInterfaceBlock(int interfaceID)
